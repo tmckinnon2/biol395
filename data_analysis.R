@@ -49,3 +49,5 @@ data.frame(table(topdown1$Station))
 trapcount = data.frame(table(topdown1[, c('TrapType', 'Date',)]))
 trapcount = trapcount[trapcount$Freq > 0,]
 
+
+
