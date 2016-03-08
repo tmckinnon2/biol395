@@ -28,26 +28,19 @@ topdown4 <- filter(topdown3, Date == "5/20/2012"|Date == "5/21/2012"|Date == "5/
        |Date == "6/20/2012"|Date == "6/21/2012"|Date == "6/22/2012"|Date == "6/23/2012"
        |Date == "6/24/2012"|Date == "6/25/2012"|Date == "6/26/2012"|Date == "6/27/2012"
        |Date == "7/2/2012")
-#Subset Dataset to Only Include Observations at Locations When both VF and VFX are Present 
+
+#Subset Dataset to Only Include Observations at Locations When both VF and VFX are Present
+topdown5 <- filter(topdown4, TrapType == "VFX")
+topdown6 <- select(topdown5, StateRouteStop_Station, Date)
+
+
+#Tried all of these and none were working- how do I do this?
+filter(topdown4,  topdown4$StateRouteStop_Station == topdown6$StateRouteStop_Station, topdown4$Date == topdown6$Date)
+topdown7 <- filter(topdown4, topdown4$StateRouteStop_Station & topdown4$Date %in% topdown6)
+filter(topdown4,  topdown4$StateRouteStop_Station == topdown6$StateRouteStop_Station, topdown4$Date == topdown6$Date)
 
 
 
-#toy example of using gather() from tidyr package
-library(tidyr)
-foo = topdown1[, c(2, 11:16)]
-foo2 = gather(foo, size, abundance, X0.2mm:X.20mm)
-foo3 = foo2[foo2$abundance > 0, ]
-
-dim(foo2)
-dim(foo3)
-gather(topdown1, size, abundance, X0.2mm:X.20mm)
-
-# Counting number of records per category or combination of categories
-table(topdown1$Station)
-data.frame(table(topdown1$Station))
-
-trapcount = data.frame(table(topdown1[, c('TrapType', 'Date',)]))
-trapcount = trapcount[trapcount$Freq > 0,]
 
 
 
