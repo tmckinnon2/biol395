@@ -21,23 +21,26 @@ trapdates = data.frame(table(topdown3[, c('TrapType', 'Date')]))
 trapdates1 <- filter(trapdates, trapdates$Freq>0)
 trapdates3 <- filter(trapdates1,trapdates1$TrapType == "VFX")
 
-# Subset Full Dataset to those Dates 
+#Subset Dataset to Dates VFX is Present
 topdown4 <- filter(topdown3, Date == "5/20/2012"|Date == "5/21/2012"|Date == "5/22/2012"
-       |Date == "5/24/2012"|Date == "5/25/2012"|Date == "5/26/2012"|Date == "5/27/2012"
-       |Date == "5/28/2012"|Date == "5/29/2012"|Date == "5/30/2012"|Date == "6/19/2012"
-       |Date == "6/20/2012"|Date == "6/21/2012"|Date == "6/22/2012"|Date == "6/23/2012"
-       |Date == "6/24/2012"|Date == "6/25/2012"|Date == "6/26/2012"|Date == "6/27/2012"
-       |Date == "7/2/2012")
+                   |Date == "5/24/2012"|Date == "5/25/2012"|Date == "5/26/2012"|Date == "5/27/2012"
+                   |Date == "5/28/2012"|Date == "5/29/2012"|Date == "5/30/2012"|Date == "6/19/2012"
+                   |Date == "6/20/2012"|Date == "6/21/2012"|Date == "6/22/2012"|Date == "6/23/2012"
+                   |Date == "6/24/2012"|Date == "6/25/2012"|Date == "6/26/2012"|Date == "6/27/2012"
+                   |Date == "7/2/2012")
 
-#Subset Dataset to Only Include Observations at Locations When both VF and VFX are Present
+#Create List of VFX Entries 
 topdown5 <- filter(topdown4, TrapType == "VFX")
 topdown6 <- select(topdown5, StateRouteStop_Station, Date)
 
+#Create a Unique Identifier Column to Filter by Date and Locations in Overall Dataset that Match Those in VFX
+topdown6$identifier <- paste0(topdown6$StateRouteStop_Station, topdown6$Date)
+topdown4$identifier <- paste0(topdown4$StateRouteStop_Station, topdown4$Date)
+topdown7 <- filter(topdown4, topdown4$identifier %in% topdown6$identifier)
 
-#Tried all of these and none were working- how do I do this?
-filter(topdown4,  topdown4$StateRouteStop_Station == topdown6$StateRouteStop_Station, topdown4$Date == topdown6$Date)
-topdown7 <- filter(topdown4, topdown4$StateRouteStop_Station & topdown4$Date %in% topdown6)
-filter(topdown4,  topdown4$StateRouteStop_Station == topdown6$StateRouteStop_Station, topdown4$Date == topdown6$Date)
+#Count Number of Observations For Each Date/Location
+observationfrequency <- count(topdown7, identifier)
+
 
 
 
