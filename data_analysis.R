@@ -8,6 +8,7 @@ library("dplyr")
 topdown <- filter(exclosure, Year == 2012)
 topdown1<- select(topdown, -LitterDepth, -TapeExposed_in, -Strip_length_in, -Destroyed., -circle, -Year)
 
+
 # Add Column combining StateRouteStop and Station
 topdown1$StateRouteStop_Station<- paste0(topdown1$StateRouteStop, topdown1$Station)
 
@@ -38,10 +39,9 @@ topdown6$identifier <- paste0(topdown6$StateRouteStop_Station, topdown6$Date)
 topdown4$identifier <- paste0(topdown4$StateRouteStop_Station, topdown4$Date)
 topdown7 <- filter(topdown4, topdown4$identifier %in% topdown6$identifier)
 
-#Count Number of Observations For Each Date/Location
-observationfrequency <- count(topdown7, identifier)
-
-
+#Summarise Observations by TrapType, StateRouteStop, and Date
+grouped <- topdown7 %>% group_by(TrapType, StateRouteStop, Date)
+averages <- summarise(grouped, mean(Abundance))
 
 
 
