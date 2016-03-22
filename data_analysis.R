@@ -41,7 +41,11 @@ topdown7 <- filter(topdown4, topdown4$identifier %in% topdown6$identifier)
 
 #Summarise Observations by TrapType, StateRouteStop, and Date
 grouped <- topdown7 %>% group_by(TrapType, StateRouteStop, Date)
-averages <- summarise(grouped, mean(Abundance))
+mean_abundance <- data.frame(table(summarise(grouped, mean(Abundance), sd(Abundance))))
+mean_abundance1 <- arrange(mean_abundance,TrapType)
+mean_herbivory <- data.frame(table(summarise (grouped, mean(Herbivory), sd(Herbivory))))
+mean_herbivory1 <- arrange (mean_herbivory, TrapType)
+
 
 
 
