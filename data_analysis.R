@@ -17,35 +17,49 @@ library(tidyr)
 topdown2 <- gather(topdown1, Size, Abundance, X0.2mm:X.20mm)
 topdown3 <- topdown2[topdown2$Abundance >0, ]
 
+#Add Back "0" Observations from Original Data
+no_observations <- filter(topdown1, X0.2mm==0 & X2.5mm==0 & X5.10mm==0 & X10.20mm==0 & X.20mm==0)
+no_observations1 <- select(no_observations, -X0.2mm, -X2.5mm, -X5.10mm, -X10.20mm, -X.20mm)
+no_observations1$Abundance = 0
+no_observations1$Size = NA
+class(no_observations1$Size)="character"
+class(no_observations1$Abundance)="integer"
+complete_observations <- union(no_observations1,topdown3)
+
+
 # Identify All Dates for Which There Are VFX Samples 
-trapdates = data.frame(table(topdown3[, c('TrapType', 'Date')]))
+trapdates = data.frame(table(complete_observations[, c('TrapType', 'Date')]))
 trapdates1 <- filter(trapdates, trapdates$Freq>0)
 trapdates3 <- filter(trapdates1,trapdates1$TrapType == "VFX")
 
-#Subset Dataset to Dates VFX is Present
-topdown4 <- filter(topdown3, Date == "5/20/2012"|Date == "5/21/2012"|Date == "5/22/2012"
-                   |Date == "5/24/2012"|Date == "5/25/2012"|Date == "5/26/2012"|Date == "5/27/2012"
-                   |Date == "5/28/2012"|Date == "5/29/2012"|Date == "5/30/2012"|Date == "6/19/2012"
-                   |Date == "6/20/2012"|Date == "6/21/2012"|Date == "6/22/2012"|Date == "6/23/2012"
-                   |Date == "6/24/2012"|Date == "6/25/2012"|Date == "6/26/2012"|Date == "6/27/2012"
-                   |Date == "7/2/2012")
-
 #Create List of VFX Entries 
-topdown5 <- filter(topdown4, TrapType == "VFX")
+topdown5 <- filter(complete_observations, TrapType == "VFX")
 topdown6 <- select(topdown5, StateRouteStop_Station, Date)
 
 #Create a Unique Identifier Column to Filter by Date and Locations in Overall Dataset that Match Those in VFX
 topdown6$identifier <- paste0(topdown6$StateRouteStop_Station, topdown6$Date)
-topdown4$identifier <- paste0(topdown4$StateRouteStop_Station, topdown4$Date)
-topdown7 <- filter(topdown4, topdown4$identifier %in% topdown6$identifier)
+complete_observations$identifier <- paste0(complete_observations$StateRouteStop_Station, complete_observations$Date)
+topdown7 <- filter(complete_observations, complete_observations$identifier %in% topdown6$identifier)
 
-#Summarise Observations by TrapType, StateRouteStop, and Date
-grouped <- topdown7 %>% group_by(TrapType, StateRouteStop, Date)
-mean_abundance <- (summarise(grouped, mean(Abundance), sd(Abundance)))
-mean_herbivory <- (summarise (grouped, mean(Herbivory), sd(Herbivory)))
+#Include Only Insects Large enough for Bird Consumption
+topdown8 <- filter(topdown7, Size== c("X2.5mm", "X5.10mm", 
+                   "X10.20mm","X.20mm"))
 
+#Summarise Observations by for All Arthropods
+grouped_all <- topdown8 %>% group_by(TrapType, StateRouteStop, Station, Date)
+mean_abundance_all <- (summarise(grouped_all, mean(Abundance), sd(Abundance)))
+mean_herbivory_all <- (summarise (grouped_all, mean(Herbivory), sd(Herbivory)))
 
+#Summarise Observations for Relevant Orders ("Bird Food Arthropods") 
+food_arthropods <- filter(topdown8, Order == c("LEPL", "COLE", "ARAN", "HETE", "ORTH", "AUCH"))
+grouped_food <- food_arthropods %>% group_by(TrapType, StateRouteStop, Station, Date, Order)
+mean_abundance_food <- (summarise(grouped_food, mean(Abundance), sd(Abundance)))
 
+#Summarise Observations for Caterpillars
+caterpillars <-filter(topdown7, Order == "LEPL")
+
+#Code to Look at Data Errors
+dataframename$TrapType [df$RecordID %in% c(10631,10632,10633)]
 
 
 
