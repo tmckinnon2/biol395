@@ -54,12 +54,15 @@ topdown9 <- filter(topdown8, Size== c("X2.5mm", "X5.10mm",
 #Summarise Observations by for All Arthropods
 grouped_all <- topdown9 %>% group_by(TrapType, StateRouteStop, Station, Date)
 mean_abundance_all <- (summarise(grouped_all, mean(Abundance)))
+mean_abundance_all$surveyID<- paste0(mean_abundance_all$StateRouteStop, mean_abundance_all$Date, 
+                                              mean_abundance_all$Station, mean_abundance_all$TrapType)
 
 #Summarise Observations for Relevant Orders ("Bird Food Arthropods") 
 food_arthropods <- filter(topdown9, Order == c("LEPL", "COLE", "ARAN", "HETE", "ORTH", "AUCH"))
-
-grouped_food <- food_arthropods %>% group_by(TrapType, StateRouteStop, Station, Date, Order)
+grouped_food <- food_arthropods %>% group_by(TrapType, StateRouteStop, Station, Date)
 mean_abundance_food <- (summarise(grouped_food, mean(Abundance)))
+mean_abundance_food$surveyID<- paste0(mean_abundance_food$StateRouteStop, mean_abundance_food$Date, 
+                                              mean_abundance_food$Station, mean_abundance_food$TrapType)
 
 #Summarise Observations for Caterpillars
 caterpillars <-filter(topdown8, Order == "LEPL")
@@ -68,7 +71,6 @@ mean_abundance_caterpillars <- (summarise(grouped_caterpillars, mean(Abundance))
 mean_abundance_caterpillars$surveyID<- paste0(mean_abundance_caterpillars$StateRouteStop, mean_abundance_caterpillars$Date, 
                                               mean_abundance_caterpillars$Station, mean_abundance_caterpillars$TrapType)
 
-
 #Create Unique Surveys Dataframe
 unique_surveys<-unique(topdown7[, c("StateRouteStop", "Date", "Station", "TrapType")])
 unique_surveys$surveyID<- paste0(unique_surveys$StateRouteStop, unique_surveys$Date, unique_surveys$Station, 
@@ -76,8 +78,21 @@ unique_surveys$surveyID<- paste0(unique_surveys$StateRouteStop, unique_surveys$D
 unique_surveys_count <- data.frame(table(unique_surveys[, c("StateRouteStop", "Date", "Station", "TrapType", "surveyID")]))
 unique_surveys_count = unique_surveys_count[unique_surveys_count$Freq> 0,]
 
+#Merge Summary Observations for 3 Food Group Types with Total Possible Survey Dates
+meanarthabundance <- merge(unique_surveys_count, mean_abundance_caterpillars, by.x="surveyID", by.y = "surveyID", all.x = TRUE)
+meanarthabundance1<- select(meanarthabundance, -Freq,-TrapType.y, -StateRouteStop.y, -Station.y, -Date.y)
+colnames(meanarthabundance1)[colnames(meanarthabundance1)=="mean(Abundance)"] <- "mean_abundance_caterpillars"
 
-caterpillars1 <- merge(unique_surveys_count, caterpillars, by.x="surveyID", by.y = "surveyID")
+meanarthabundance2 <- merge(meanarthabundance1, mean_abundance_all, by.x="surveyID", by.y = "surveyID", all.x = TRUE)
+meanarthabundance3<- select(meanarthabundance2, -TrapType, -StateRouteStop, -Station, -Date)
+colnames(meanarthabundance3)[colnames(meanarthabundance3)=="mean(Abundance)"] <- "mean_abundance_all"
+
+meanarthabundance4 <- merge(meanarthabundance3, mean_abundance_food, by.x="surveyID", by.y = "surveyID", all.x = TRUE)
+meanarthabundance5<- select(meanarthabundance4, -TrapType, -StateRouteStop, -Station, -Date)
+colnames(meanarthabundance5)[colnames(meanarthabundance5)=="mean(Abundance)"] <- "mean_abundance_food"
+
+#Spread VF and VFX data into separate columns
+meanarthabundance6 <- select(meanarthabundance5, -surveyID)
 
 #Code to Look at Data Errors
 dataframename$TrapType [df$RecordID %in% c(10631,10632,10633)]
