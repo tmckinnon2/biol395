@@ -53,23 +53,24 @@ topdown9 <- filter(topdown8, Size== c("X2.5mm", "X5.10mm",
 
 #Summarise Observations by for All Arthropods
 grouped_all <- topdown9 %>% group_by(TrapType, StateRouteStop, Station, Date)
-mean_abundance_all <- (summarise(grouped_all, mean(Abundance)))
-mean_abundance_all$surveyID<- paste0(mean_abundance_all$StateRouteStop, mean_abundance_all$Date, 
-                                              mean_abundance_all$Station, mean_abundance_all$TrapType)
+total_all <- (summarise(grouped_all, sum(Abundance)))
+total_all$surveyID<- paste0(total_all$StateRouteStop, total_all$Date,
+                                       total_all$Station, total_all$TrapType)
+
 
 #Summarise Observations for Relevant Orders ("Bird Food Arthropods") 
 food_arthropods <- filter(topdown9, Order == c("LEPL", "COLE", "ARAN", "HETE", "ORTH", "AUCH"))
 grouped_food <- food_arthropods %>% group_by(TrapType, StateRouteStop, Station, Date)
-mean_abundance_food <- (summarise(grouped_food, mean(Abundance)))
-mean_abundance_food$surveyID<- paste0(mean_abundance_food$StateRouteStop, mean_abundance_food$Date, 
-                                              mean_abundance_food$Station, mean_abundance_food$TrapType)
+total_food <- (summarise(grouped_food, sum(Abundance)))
+total_food$surveyID<- paste0(total_food$StateRouteStop, total_food$Date, 
+                                              total_food$Station, total_food$TrapType)
 
 #Summarise Observations for Caterpillars
 caterpillars <-filter(topdown8, Order == "LEPL")
 grouped_caterpillars <- caterpillars %>% group_by(TrapType, StateRouteStop, Station, Date)
-mean_abundance_caterpillars <- (summarise(grouped_caterpillars, mean(Abundance)))
-mean_abundance_caterpillars$surveyID<- paste0(mean_abundance_caterpillars$StateRouteStop, mean_abundance_caterpillars$Date, 
-                                              mean_abundance_caterpillars$Station, mean_abundance_caterpillars$TrapType)
+total_caterpillars <- (summarise(grouped_caterpillars, sum(Abundance)))
+total_caterpillars$surveyID<- paste0(total_caterpillars$StateRouteStop, total_caterpillars$Date, 
+                                              total_caterpillars$Station, total_caterpillars$TrapType)
 
 #Create Unique Surveys Dataframe
 unique_surveys<-unique(topdown7[, c("StateRouteStop", "Date", "Station", "TrapType")])
@@ -78,21 +79,40 @@ unique_surveys$surveyID<- paste0(unique_surveys$StateRouteStop, unique_surveys$D
 unique_surveys_count <- data.frame(table(unique_surveys[, c("StateRouteStop", "Date", "Station", "TrapType", "surveyID")]))
 unique_surveys_count = unique_surveys_count[unique_surveys_count$Freq> 0,]
 
-#Merge Summary Observations for 3 Food Group Types with Total Possible Survey Dates
-meanarthabundance <- merge(unique_surveys_count, mean_abundance_caterpillars, by.x="surveyID", by.y = "surveyID", all.x = TRUE)
-meanarthabundance1<- select(meanarthabundance, -Freq,-TrapType.y, -StateRouteStop.y, -Station.y, -Date.y)
-colnames(meanarthabundance1)[colnames(meanarthabundance1)=="mean(Abundance)"] <- "mean_abundance_caterpillars"
+#Merge Summary Obsv. for 3 Food Types with Unique Surveys to Create 3 New Dataframes
+all_abundance <- merge(unique_surveys_count, total_all, by.x="surveyID", by.y = "surveyID", all.x = TRUE)
+all_abundance1<- select(all_abundance, -Freq,-TrapType.y, -StateRouteStop.y, -Station.y, -Date.y, -surveyID)
+all_abundance2<-setnames(all_abundance1, old = c('StateRouteStop.x','Date.x','Station.x', 'TrapType.x', 'sum(Abundance)'), 
+                                      new = c('StateRouteStop','Date', "Station", "TrapType","total_all"))
+all_abundance2[is.na(all_abundance2)] <- 0
 
-meanarthabundance2 <- merge(meanarthabundance1, mean_abundance_all, by.x="surveyID", by.y = "surveyID", all.x = TRUE)
-meanarthabundance3<- select(meanarthabundance2, -TrapType, -StateRouteStop, -Station, -Date)
-colnames(meanarthabundance3)[colnames(meanarthabundance3)=="mean(Abundance)"] <- "mean_abundance_all"
 
-meanarthabundance4 <- merge(meanarthabundance3, mean_abundance_food, by.x="surveyID", by.y = "surveyID", all.x = TRUE)
-meanarthabundance5<- select(meanarthabundance4, -TrapType, -StateRouteStop, -Station, -Date)
-colnames(meanarthabundance5)[colnames(meanarthabundance5)=="mean(Abundance)"] <- "mean_abundance_food"
+food_abundance <- merge(unique_surveys_count, total_food, by.x="surveyID", by.y = "surveyID", all.x = TRUE)
+food_abundance1<- select(food_abundance, -Freq,-TrapType.y, -StateRouteStop.y, -Station.y, -Date.y, -surveyID)
+food_abundance2<-setnames(food_abundance1, old = c('StateRouteStop.x','Date.x','Station.x', 'TrapType.x', 'sum(Abundance)'), 
+                         new = c('StateRouteStop','Date', "Station", "TrapType","total_food"))
+food_abundance2[is.na(food_abundance2)] <- 0
 
-#Spread VF and VFX data into separate columns
-meanarthabundance6 <- select(meanarthabundance5, -surveyID)
+
+caterpillar_abundance <- merge(unique_surveys_count, total_caterpillars, by.x="surveyID", by.y = "surveyID", all.x = TRUE)
+caterpillar_abundance1<- select(caterpillar_abundance, -Freq,-TrapType.y, -StateRouteStop.y, -Station.y, -Date.y, -surveyID)
+caterpillar_abundance2<-setnames(caterpillar_abundance1, old = c('StateRouteStop.x','Date.x','Station.x', 'TrapType.x', 'sum(Abundance)'), 
+                         new = c('StateRouteStop','Date', "Station", "TrapType","total_caterpillars"))
+caterpillar_abundance2[is.na(caterpillar_abundance2)] <- 0
+
+
+#Spread VF and VFX to Columns in 3 Food Type Datasets
+all_abundance3 <- spread(all_abundance2, TrapType, total_all)
+food_abundance3 <- spread(food_abundance2, TrapType, total_food)
+caterpillar_abundance3 <-spread(caterpillar_abundance2, TrapType, total_caterpillars)
+
+#Run Wilcoxon Test for 3 Food Type Datasets
+wilcox.test(x=all_abundance3$VF,y=all_abundance3$VFX, paired=TRUE)
+wilcox.test(x=food_abundance3$VF,y=food_abundance3$VFX, paired=TRUE)
+wilcox.test(x=caterpillar_abundance3$VF,y=caterpillar_abundance3$VFX, paired=TRUE)
+
+
+
 
 #Code to Look at Data Errors
 dataframename$TrapType [df$RecordID %in% c(10631,10632,10633)]
