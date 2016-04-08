@@ -44,7 +44,6 @@ topdown7 <- filter(complete_observations, complete_observations$identifier %in% 
 topdown7$surveyID<- paste0(topdown7$StateRouteStop, topdown7$Date, topdown7$Station, 
                                topdown7$TrapType)
 
-
 # Narrow down to stateroutestop-stations with sampling in both visits 1 and 3
 topdown8 <- filter(topdown7, VisitNumber %in% c(1,3))
 uniqSiteVisits = unique(topdown8[, c('StateRouteStop', 'Station', 'TrapType', 'VisitNumber')])
@@ -65,7 +64,7 @@ total_all$surveyID<- paste0(total_all$StateRouteStop, total_all$VisitNumber,
                                        total_all$Station, total_all$TrapType)
 
 
-#Summarise Observations for Relevant Orders ("Bird Food Arthropods") 
+#Summarise Observations for Relevant Orders ("Bird food Arthropods") 
 food_arthropods <- filter(topdown10, Order %in% c("LEPL", "COLE", "ARAN", "HETE", "ORTH", "AUCH"))
 grouped_food <- food_arthropods %>% group_by(TrapType, StateRouteStop, Station, VisitNumber)
 total_food <- (summarise(grouped_food, sum(Abundance)))
@@ -87,7 +86,7 @@ unique_surveys_count <- data.frame(table(unique_surveys[, c("StateRouteStop", "V
 unique_surveys_count = unique_surveys_count[unique_surveys_count$Freq> 0,]
 
 
-#Merge Summary Obsv. for 3 Food Types with Unique Surveys to Create 3 New Dataframes
+#Merge Summary Obsv. for 3 food Types with Unique Surveys to Create 3 New Dataframes
 all_abundance <- merge(unique_surveys_count, total_all, by.x="surveyID", by.y = "surveyID", all.x = TRUE)
 all_abundance1<- select(all_abundance, -Freq,-TrapType.y, -StateRouteStop.y, -Station.y, -VisitNumber.y, -surveyID)
 names(all_abundance1) = c('StateRouteStop','VisitNumber', "Station", "TrapType","total_all")
@@ -106,17 +105,17 @@ names(caterpillar_abundance1) = c('StateRouteStop','VisitNumber', "Station", "Tr
 caterpillar_abundance1[is.na(caterpillar_abundance1)] <- 0
 
 
-#Spread VF and VFX to Columns in 3 Food Type Datasets
+#Spread VF and VFX to Columns in 3 food Type Datasets
 all_abundance2 <- spread(all_abundance1, TrapType, total_all)
 food_abundance2 <- spread(food_abundance1, TrapType, total_food)
 caterpillar_abundance2 <-spread(caterpillar_abundance1, TrapType, total_caterpillars)
 
-#Run Wilcoxon Test for 3 Food Type Datasets Using VF and VFX direct comparison
+#Run Wilcoxon Test for 3 food Type Datasets Using VF and VFX direct comparison
 wilcox.test(x=all_abundance2$VF,y=all_abundance2$VFX, paired=TRUE)
 wilcox.test(x=food_abundance2$VF,y=food_abundance2$VFX, paired=TRUE)
 wilcox.test(x=caterpillar_abundance2$VF,y=caterpillar_abundance2$VFX, paired=TRUE)
 
-#Spread Visit 1 and Visit 3 for 3 Food Type Datasets and Create Difference Column
+#Spread Visit 1 and Visit 3 for 3 food Type Datasets and Create Difference Column
 all_time <- spread(all_abundance1,VisitNumber, total_all)
 names(all_time) = c('StateRouteStop','Station', "TrapType", "Visit1", "Visit3")
 all_time$visit_dif<-all_time$Visit3-all_time$Visit1
@@ -129,10 +128,60 @@ caterpillar_time <- spread(caterpillar_abundance1, VisitNumber, total_caterpilla
 names(caterpillar_time) = c('StateRouteStop','Station', "TrapType", "Visit1", "Visit3")
 caterpillar_time$visit_dif<-caterpillar_time$Visit3-caterpillar_time$Visit1
 
+
 #Run wilcox_test
+library("coin")
 wilcox_test(visit_dif ~ TrapType, data=all_time)
 wilcox_test(visit_dif ~ TrapType, data=food_time)
 wilcox_test(visit_dif ~ TrapType, data=caterpillar_time)
+
+##Spread VF and VFX for 3 food Type Datasets w/ Visit Numbers 
+#All food Group
+all_time1 <- select(all_time, -Visit3, -visit_dif)
+all_Visit1<- spread(all_time1, TrapType, Visit1)
+names(all_Visit1) <- c("StateRouteStop", "Station", "Visit1VF", "Visit1VFX")
+all_Visit1$ID <- paste(all_Visit1$StateRouteStop, all_Visit1$Station)
+
+all_time2 <- select(all_time, -Visit1, -visit_dif)
+all_Visit3<- spread(all_time2, TrapType, Visit3)
+names(all_Visit3) <- c("StateRouteStop", "Station", "Visit3VF", "Visit3VFX")
+all_Visit3$ID <- paste(all_Visit3$StateRouteStop, all_Visit3$Station)
+
+all_time3 <- merge(all_Visit1, all_Visit3, by.x="ID", by.y="ID")
+all_time4 <- select(all_time3, -StateRouteStop.y, -Station.y, -ID)
+names(all_time4) <- c("StateRouteStop", "Station", "Visit1VF", "Visit1VFX", "Visit3VF", "Visit3VFX")
+
+##Bird food Group
+food_time1 <- select(food_time, -Visit3, -visit_dif)
+food_Visit1<- spread(food_time1, TrapType, Visit1)
+names(food_Visit1) <- c("StateRouteStop", "Station", "Visit1VF", "Visit1VFX")
+food_Visit1$ID <- paste(food_Visit1$StateRouteStop, food_Visit1$Station)
+
+food_time2 <- select(food_time, -Visit1, -visit_dif)
+food_Visit3<- spread(food_time2, TrapType, Visit3)
+names(food_Visit3) <- c("StateRouteStop", "Station", "Visit3VF", "Visit3VFX")
+food_Visit3$ID <- paste(food_Visit3$StateRouteStop, food_Visit3$Station)
+
+food_time3 <- merge(food_Visit1, food_Visit3, by.x="ID", by.y="ID")
+food_time4 <- select(food_time3, -StateRouteStop.y, -Station.y, -ID)
+names(food_time4) <- c("StateRouteStop", "Station", "Visit1VF", "Visit1VFX", "Visit3VF", "Visit3VFX")
+
+
+##Caterpillar food Group
+caterpillar_time1 <- select(caterpillar_time, -Visit3, -visit_dif)
+caterpillar_Visit1<- spread(caterpillar_time1, TrapType, Visit1)
+names(caterpillar_Visit1) <- c("StateRouteStop", "Station", "Visit1VF", "Visit1VFX")
+caterpillar_Visit1$ID <- paste(caterpillar_Visit1$StateRouteStop, caterpillar_Visit1$Station)
+
+caterpillar_time2 <- select(caterpillar_time, -Visit1, -visit_dif)
+caterpillar_Visit3<- spread(caterpillar_time2, TrapType, Visit3)
+names(caterpillar_Visit3) <- c("StateRouteStop", "Station", "Visit3VF", "Visit3VFX")
+caterpillar_Visit3$ID <- paste(caterpillar_Visit3$StateRouteStop, caterpillar_Visit3$Station)
+
+caterpillar_time3 <- merge(caterpillar_Visit1, caterpillar_Visit3, by.x="ID", by.y="ID")
+caterpillar_time4 <- select(caterpillar_time3, -StateRouteStop.y, -Station.y, -ID)
+names(caterpillar_time4) <- c("StateRouteStop", "Station", "Visit1VF", "Visit1VFX", "Visit3VF", "Visit3VFX")
+
 
 #Code to Look at Data Errors
 dataframename$TrapType [df$RecordID %in% c(10631,10632,10633)]
