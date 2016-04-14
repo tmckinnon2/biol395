@@ -191,7 +191,7 @@ names(food_time4) <- c("StateRouteStop", "Station", "Visit1VF", "Visit1VFX", "Vi
 
 
 ##Caterpillar food Group
-caterpillar_time1 <- select(caterpillar_time, -Visit3, -visit_dif,)
+caterpillar_time1 <- select(caterpillar_time, -Visit3, -visit_dif)
 caterpillar_Visit1<- spread(caterpillar_time1, TrapType, Visit1)
 names(caterpillar_Visit1) <- c("StateRouteStop", "Station", "Visit1VF", "Visit1VFX")
 caterpillar_Visit1$ID <- paste(caterpillar_Visit1$StateRouteStop, caterpillar_Visit1$Station)
@@ -206,8 +206,15 @@ caterpillar_time4 <- select(caterpillar_time3, -StateRouteStop.y, -Station.y, -I
 names(caterpillar_time4) <- c("StateRouteStop", "Station", "Visit1VF", "Visit1VFX", "Visit3VF", "Visit3VFX")
 
 #Example Graphs
-ex_graph_data <-filter(all_time4, StateRouteStop == "8890236", Station== "3B")
-plot.default (ex_graph_data)
+ex_graph_data <-filter(all_abundance2, StateRouteStop == "8890236", Station== "3B")
+plot(x=ex_graph_data$VisitNumber, y=ex_graph_data$VFX)#figure out how to plot both VFX and VF on same graph
+
+mean(all_time4$Visit1VF)
+mean(all_time4$Visit3VF)
+mean(all_time4$Visit1VFX)
+mean(all_time4$Visit3VFX)
+VFX<-c(2.463415, 2.426829)
+VF <-c(2.097561, 1.365854)
 
 
 
