@@ -52,6 +52,7 @@ goodstations = visitcount[visitcount$Freq == 4,] #Expect 2 recs per TrapType tim
 goodstations$StateRouteStop_Station = paste(goodstations$StateRouteStop, goodstations$Station, sep = '')
 topdown9 = topdown8[topdown8$StateRouteStop_Station %in% goodstations$StateRouteStop_Station, ]
 
+
 #Include Only Insects Large enough for Bird Consumption
 topdown10 <- filter(topdown9, Size %in% c("X2.5mm", "X5.10mm", 
                                          "X10.20mm","X.20mm"))
@@ -128,15 +129,37 @@ caterpillar_time <- spread(caterpillar_abundance1, VisitNumber, total_caterpilla
 names(caterpillar_time) = c('StateRouteStop','Station', "TrapType", "Visit1", "Visit3")
 caterpillar_time$visit_dif<-caterpillar_time$Visit3-caterpillar_time$Visit1
 
-
 #Run wilcox_test
 library("coin")
 wilcox_test(visit_dif ~ TrapType, data=all_time)
 wilcox_test(visit_dif ~ TrapType, data=food_time)
 wilcox_test(visit_dif ~ TrapType, data=caterpillar_time)
 
-##Spread VF and VFX for 3 food Type Datasets w/ Visit Numbers 
-#All food Group
+#Subset Food Type Datasets to Include Only Data where TreeSpecies 
+#is the same for VF and VFX
+stationplants = unique(topdown9[, c('StateRouteStop', 'Station', 'TrapType', 'VisitNumber', 'TreeSpecies')])
+plantspCount = data.frame(table(stationplants[, c('StateRouteStop', 'Station', 'TrapType', 'TreeSpecies')]))
+plantspCount = plantspCount[plantspCount$Freq > 0,]
+plantspCount = plantspCount[order(plantspCount$StateRouteStop, plantspCount$Station, plantspCount$TrapType),]
+plantspCount1 <- filter(plantspCount, Freq==2) 
+plantspCount2 <- spread(plantspCount1, key=TrapType, value=TreeSpecies)
+plantspCount3 <- filter(plantspCount2, VF==VFX)
+plantspCount3$ID <- paste(plantspCount3$StateRouteStop, plantspCount3$Station)
+
+paired_all <- all_time
+paired_all$ID <- paste(paired_all$StateRouteStop, paired_all$Station)
+paired_all1 <- filter(paired_all, paired_all$ID %in% plantspCount3$ID)
+
+paired_food <- food_time
+paired_food$ID <- paste(paired_food$StateRouteStop, paired_food$Station)
+paired_food1 <- filter(paired_food, paired_food$ID %in% plantspCount3$ID)
+
+paired_caterpillar <- caterpillar_time
+paired_caterpillar$ID <- paste(paired_caterpillar$StateRouteStop, paired_caterpillar$Station)
+paired_caterpillar1 <- filter(paired_caterpillar, paired_caterpillar$ID %in% plantspCount3$ID)
+
+#Spread VF and VFX for 3 food Type Datasets w/ Visit Numbers 
+##All food Group
 all_time1 <- select(all_time, -Visit3, -visit_dif)
 all_Visit1<- spread(all_time1, TrapType, Visit1)
 names(all_Visit1) <- c("StateRouteStop", "Station", "Visit1VF", "Visit1VFX")
@@ -168,7 +191,7 @@ names(food_time4) <- c("StateRouteStop", "Station", "Visit1VF", "Visit1VFX", "Vi
 
 
 ##Caterpillar food Group
-caterpillar_time1 <- select(caterpillar_time, -Visit3, -visit_dif)
+caterpillar_time1 <- select(caterpillar_time, -Visit3, -visit_dif,)
 caterpillar_Visit1<- spread(caterpillar_time1, TrapType, Visit1)
 names(caterpillar_Visit1) <- c("StateRouteStop", "Station", "Visit1VF", "Visit1VFX")
 caterpillar_Visit1$ID <- paste(caterpillar_Visit1$StateRouteStop, caterpillar_Visit1$Station)
@@ -182,15 +205,11 @@ caterpillar_time3 <- merge(caterpillar_Visit1, caterpillar_Visit3, by.x="ID", by
 caterpillar_time4 <- select(caterpillar_time3, -StateRouteStop.y, -Station.y, -ID)
 names(caterpillar_time4) <- c("StateRouteStop", "Station", "Visit1VF", "Visit1VFX", "Visit3VF", "Visit3VFX")
 
+#Example Graphs
+ex_graph_data <-filter(all_time4, StateRouteStop == "8890236", Station== "3B")
+plot.default (ex_graph_data)
 
-#Code to Look at Data Errors
-dataframename$TrapType [df$RecordID %in% c(10631,10632,10633)]
 
-#Dr. Hurlbert's Code for Finding Frequency of Plant species
-stationplants = unique(topdown1[, c('StateRouteStop', 'Station', 'TrapType', 'VisitNumber', 'TreeSpecies')])
-plantspCount = data.frame(table(stationplants[, c('StateRouteStop', 'Station', 'TrapType', 'TreeSpecies')]))
-plantspCount = plantspCount[plantspCount$Freq > 0,]
-plantspCount = plantspCount[order(plantspCount$StateRouteStop, plantspCount$Station, plantspCount$TrapType),]
 
 
 
