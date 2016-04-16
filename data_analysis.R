@@ -189,7 +189,6 @@ food_time3 <- merge(food_Visit1, food_Visit3, by.x="ID", by.y="ID")
 food_time4 <- select(food_time3, -StateRouteStop.y, -Station.y, -ID)
 names(food_time4) <- c("StateRouteStop", "Station", "Visit1VF", "Visit1VFX", "Visit3VF", "Visit3VFX")
 
-
 ##Caterpillar food Group
 caterpillar_time1 <- select(caterpillar_time, -Visit3, -visit_dif)
 caterpillar_Visit1<- spread(caterpillar_time1, TrapType, Visit1)
@@ -205,16 +204,34 @@ caterpillar_time3 <- merge(caterpillar_Visit1, caterpillar_Visit3, by.x="ID", by
 caterpillar_time4 <- select(caterpillar_time3, -StateRouteStop.y, -Station.y, -ID)
 names(caterpillar_time4) <- c("StateRouteStop", "Station", "Visit1VF", "Visit1VFX", "Visit3VF", "Visit3VFX")
 
-#Example Graphs
+#Example Change in Abundance Over Time Graph (for one StateRouteStop-Station)
 ex_graph_data <-filter(all_abundance2, StateRouteStop == "8890236", Station== "3B")
-plot(x=ex_graph_data$VisitNumber, y=ex_graph_data$VFX)#figure out how to plot both VFX and VF on same graph
+ex_graph_data$VisitNumber = as.numeric(as.character(ex_graph_data$VisitNumber))
+plot(x=ex_graph_data$VisitNumber, y=ex_graph_data$VFX, xlim=range(c(0,4)), ylim=range(c(1,5)), 
+            xlab="Visit Number", ylab="Arthropod Abundance", type="b", col="red", main="Example Change In Arthropod Abundance Over Visits")
+points(x=ex_graph_data$VisitNumber, y=ex_graph_data$VF, type="b", col="blue")
 
-mean(all_time4$Visit1VF)
-mean(all_time4$Visit3VF)
-mean(all_time4$Visit1VFX)
-mean(all_time4$Visit3VFX)
-VFX<-c(2.463415, 2.426829)
-VF <-c(2.097561, 1.365854)
+# Plotting with a for loop
+all_abundance2$StateRouteStopStation = paste(all_abundance2$StateRouteStop, all_abundance2$Station, sep = '')
+
+uniqStations = unique(all_abundance2$StateRouteStopStation)
+temp <- filter(all_abundance2, StateRouteStop == as.numeric(substr(uniqStations[1], 1, 7)), 
+               Station == substr(uniqStations[1], 8, 9))
+plot(temp$VisitNumber, temp$VFX, xlim=c(0,4), ylim=c(0, 20), xaxt = "n", 
+     xlab="Visit Number", ylab="Arthropod Abundance", type="b", col="red")
+points(x=temp$VisitNumber, y=temp$VF, type="b", col="blue")
+
+for (station in uniqStations[2:length(uniqStations)]) {
+  temp <- filter(all_abundance2, StateRouteStop == as.numeric(substr(station, 1, 7)), 
+                 Station == substr(station, 8, 9))
+  points(temp$VisitNumber, temp$VFX, type="b", col="red")
+  points(x=temp$VisitNumber, y=temp$VF, type="b", col="blue")
+}
+
+#Example Differences Graph
+ex_graph_data1 <- filter(all_time, StateRouteStop == "8890236", Station== "3B")
+barplot(height=ex_graph_data1$visit_dif, xlab="Trap Type", ylab="Change in Abundance", 
+        main="Change in Abundance from Visit 1 to Visit 3", names.arg=c("VF", "VFX"), col="green")
 
 
 
