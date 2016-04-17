@@ -233,8 +233,28 @@ ex_graph_data1 <- filter(all_time, StateRouteStop == "8890236", Station== "3B")
 barplot(height=ex_graph_data1$visit_dif, xlab="Trap Type", ylab="Change in Abundance", 
         main="Change in Abundance from Visit 1 to Visit 3", names.arg=c("VF", "VFX"), col="green")
 
+#Histogram for all 3 Food Types 
+#Showing the difference in the Visit3 and Visit 1 differences for VFX and VF
+all_time4$VF_dif<- all_time4$Visit3VF-all_time4$Visit1VF
+all_time4$VFX_dif<- all_time4$Visit3VFX-all_time4$Visit1VFX
+all_time4$VFX_VF_dif<-all_time4$VFX_dif-all_time4$VF_dif
+histogram(all_time4$VFX_VF_dif, breaks=30, xlim=c(-20,15), 
+          xlab="Difference in Change in Arth Density between VFX and VF",
+          main="All Arthropods >2.5mm")
 
+food_time4$VF_dif<- food_time4$Visit3VF-food_time4$Visit1VF
+food_time4$VFX_dif<- food_time4$Visit3VFX-food_time4$Visit1VFX
+food_time4$VFX_VF_dif<-food_time4$VFX_dif-food_time4$VF_dif
+histogram(food_time4$VFX_VF_dif, breaks=30, 
+          xlab="Difference in Change in Arth Density between VFX and VF", 
+          main="Bird Food Arthropods")
 
+caterpillar_time4$VF_dif<- caterpillar_time4$Visit3VF-caterpillar_time4$Visit1VF
+caterpillar_time4$VFX_dif<- caterpillar_time4$Visit3VFX-caterpillar_time4$Visit1VFX
+caterpillar_time4$VFX_VF_dif<-caterpillar_time4$VFX_dif-caterpillar_time4$VF_dif
+histogram(caterpillar_time4$VFX_VF_dif, breaks=10,
+          xlab="Difference in Change in Arth Density between VFX and VF",
+          main="Caterpillars")
 
 
 
