@@ -25,12 +25,6 @@ class(no_observations1$Size)="character"
 class(no_observations1$Abundance)="integer"
 complete_observations <- union(no_observations1,topdown3)
 
-
-# Identify All Dates for Which There Are VFX Samples 
-trapdates = data.frame(table(complete_observations[, c('TrapType', 'Date')]))
-trapdates1 <- filter(trapdates, trapdates$Freq>0)
-trapdates3 <- filter(trapdates1,trapdates1$TrapType == "VFX")
-
 #Create List of VFX Entries 
 topdown5 <- filter(complete_observations, TrapType == "VFX")
 topdown6 <- select(topdown5, StateRouteStop_Station, Date)
@@ -158,21 +152,68 @@ wilcox_test(visit_dif ~ TrapType, data=paired_all1)
 wilcox_test(visit_dif ~ TrapType, data=paired_food1)
 wilcox_test(visit_dif ~ TrapType, data=paired_caterpillar1)
 
-#Average difference in Change in VFX-change in VF for stations with the same plant species for both treatments##still working
+#Average difference in Change in VFX-change in VF for stations with the same plant species for both treatments
+##All Food Group
 paired_all2 <- select(paired_all1, -Visit3, -visit_dif, -ID)
-paired_all_Visit1<- spread(paired_all1, TrapType, Visit1)
+paired_all_Visit1<- spread(paired_all2, TrapType, Visit1)
 names(paired_all_Visit1) <- c("StateRouteStop", "Station", "Visit1VF", "Visit1VFX")
 paired_all_Visit1$ID <- paste(paired_all_Visit1$StateRouteStop, paired_all_Visit1$Station)
 
-paired_all3 <- select(paired_all1, -Visit1, -visit_dif)
+paired_all3 <- select(paired_all1, -Visit1, -visit_dif, -ID)
 paired_all_Visit3<- spread(paired_all3, TrapType, Visit3)
 names(paired_all_Visit3) <- c("StateRouteStop", "Station", "Visit3VF", "Visit3VFX")
 paired_all_Visit3$ID <- paste(paired_all_Visit3$StateRouteStop, paired_all_Visit3$Station)
 
 paired_all4 <- merge(paired_all_Visit1, paired_all_Visit3, by.x="ID", by.y="ID")
-paired_all_5 <- select(paired_all3, -StateRouteStop.y, -Station.y, -ID)
-names(paired_all_5) <- c("StateRouteStop", "Station", "Visit1VF", "Visit1VFX", "Visit3VF", "Visit3VFX")
+paired_all5 <- select(paired_all4, -StateRouteStop.y, -Station.y, -ID)
+names(paired_all5) <- c("StateRouteStop", "Station", "Visit1VF", "Visit1VFX", "Visit3VF", "Visit3VFX")
 
+paired_all5$VF_dif <- paired_all5$Visit3VF-paired_all5$Visit1VF
+paired_all5$VFX_dif <- paired_all5$Visit3VFX-paired_all5$Visit1VFX
+paired_all5$VFX_VF_dif <- paired_all5$VFX_dif-paired_all5$VF_dif
+
+##Bird Food Group
+paired_food2 <- select(paired_food1, -Visit3, -visit_dif, -ID)
+paired_food_Visit1<- spread(paired_food2, TrapType, Visit1)
+names(paired_food_Visit1) <- c("StateRouteStop", "Station", "Visit1VF", "Visit1VFX")
+paired_food_Visit1$ID <- paste(paired_food_Visit1$StateRouteStop, paired_food_Visit1$Station)
+
+paired_food3 <- select(paired_food1, -Visit1, -visit_dif, -ID)
+paired_food_Visit3<- spread(paired_food3, TrapType, Visit3)
+names(paired_food_Visit3) <- c("StateRouteStop", "Station", "Visit3VF", "Visit3VFX")
+paired_food_Visit3$ID <- paste(paired_food_Visit3$StateRouteStop, paired_food_Visit3$Station)
+
+paired_food4 <- merge(paired_food_Visit1, paired_food_Visit3, by.x="ID", by.y="ID")
+paired_food5 <- select(paired_food4, -StateRouteStop.y, -Station.y, -ID)
+names(paired_food5) <- c("StateRouteStop", "Station", "Visit1VF", "Visit1VFX", "Visit3VF", "Visit3VFX")
+
+paired_food5$VF_dif <- paired_food5$Visit3VF-paired_food5$Visit1VF
+paired_food5$VFX_dif <- paired_food5$Visit3VFX-paired_food5$Visit1VFX
+paired_food5$VFX_VF_dif <- paired_food5$VFX_dif-paired_food5$VF_dif
+
+##Caterpillar Food Group
+paired_caterpillar2 <- select(paired_caterpillar1, -Visit3, -visit_dif, -ID)
+paired_caterpillar_Visit1<- spread(paired_caterpillar2, TrapType, Visit1)
+names(paired_caterpillar_Visit1) <- c("StateRouteStop", "Station", "Visit1VF", "Visit1VFX")
+paired_caterpillar_Visit1$ID <- paste(paired_caterpillar_Visit1$StateRouteStop, paired_caterpillar_Visit1$Station)
+
+paired_caterpillar3 <- select(paired_caterpillar1, -Visit1, -visit_dif, -ID)
+paired_caterpillar_Visit3<- spread(paired_caterpillar3, TrapType, Visit3)
+names(paired_caterpillar_Visit3) <- c("StateRouteStop", "Station", "Visit3VF", "Visit3VFX")
+paired_caterpillar_Visit3$ID <- paste(paired_caterpillar_Visit3$StateRouteStop, paired_caterpillar_Visit3$Station)
+
+paired_caterpillar4 <- merge(paired_caterpillar_Visit1, paired_caterpillar_Visit3, by.x="ID", by.y="ID")
+paired_caterpillar5 <- select(paired_caterpillar4, -StateRouteStop.y, -Station.y, -ID)
+names(paired_caterpillar5) <- c("StateRouteStop", "Station", "Visit1VF", "Visit1VFX", "Visit3VF", "Visit3VFX")
+
+paired_caterpillar5$VF_dif <- paired_caterpillar5$Visit3VF-paired_caterpillar5$Visit1VF
+paired_caterpillar5$VFX_dif <- paired_caterpillar5$Visit3VFX-paired_caterpillar5$Visit1VFX
+paired_caterpillar5$VFX_VF_dif <- paired_caterpillar5$VFX_dif-paired_caterpillar5$VF_dif
+
+##Averages of Difference in Change in VFX over time and VF over time for 3 food groups
+paired_all_avg <- summarize(paired_all5, mean(VFX_VF_dif))
+paired_food_avg <- summarize(paired_food5, mean(VFX_VF_dif))
+paired_caterpillar_avg <- summarize(paired_caterpillar5, mean(VFX_VF_dif))
 
 #Spread VF and VFX for 3 food Type Datasets w/ Visit Numbers 
 ##All food Group
@@ -225,7 +266,7 @@ names(caterpillar_time4) <- c("StateRouteStop", "Station", "Visit1VF", "Visit1VF
 ex_graph_data <-filter(all_abundance2, StateRouteStop == "8890236", Station== "3B")
 ex_graph_data$VisitNumber = as.numeric(as.character(ex_graph_data$VisitNumber))
 plot(x=ex_graph_data$VisitNumber, y=ex_graph_data$VFX, xlim=range(c(0,4)), ylim=range(c(1,5)), 
-            xlab="Visit Number", ylab="Arthropod Abundance", type="b", col="red", main="Example Change In Arthropod Abundance Over Visits")
+            xlab="Visit Number", ylab="Arthropod Abundance", type="b", col="red", main="Sample Change In Arthropod Abundance Over Time")
 points(x=ex_graph_data$VisitNumber, y=ex_graph_data$VF, type="b", col="blue")
 
 # Plotting with a for loop
@@ -248,7 +289,7 @@ for (station in uniqStations[2:length(uniqStations)]) {
 #Example Differences Graph
 ex_graph_data1 <- filter(all_time, StateRouteStop == "8890236", Station== "3B")
 barplot(height=ex_graph_data1$visit_dif, xlab="Trap Type", ylab="Change in Abundance", 
-        main="Change in Abundance from Visit 1 to Visit 3", names.arg=c("VF", "VFX"), col="green")
+        main="Sample Change in Abundance from Visit 1 to Visit 3", names.arg=c("VF", "VFX"), col="green")
 
 #Histogram for all 3 Food Types 
 #Showing the difference in the Visit3 and Visit 1 differences for VFX and VF
@@ -270,7 +311,7 @@ histogram(food_time4$VFX_VF_dif, breaks=30,
 caterpillar_time4$VF_dif<- caterpillar_time4$Visit3VF-caterpillar_time4$Visit1VF
 caterpillar_time4$VFX_dif<- caterpillar_time4$Visit3VFX-caterpillar_time4$Visit1VFX
 caterpillar_time4$VFX_VF_dif<-caterpillar_time4$VFX_dif-caterpillar_time4$VF_dif
-histogram(caterpillar_time4$VFX_VF_dif, breaks=10,
+histogram(caterpillar_time4$VFX_VF_dif, breaks=10, ylab="Percent of Total",
           xlab="Difference in Change in Arth Density between VFX and VF",
           main="Caterpillars")
 
@@ -286,9 +327,18 @@ exclosure_lat_longs<- filter(lat_longs, Stateroutestop %in% c("2704132", "630220
 #Map lat-long data
 library("maps")
 map('state', xlim = c(-85, -75), ylim = c(32, 40))
-points(exclosure_lat_longs$Longitude,exclosure_lat_longs$Latitude, pch = 16, col ='green', cex = 1.5)
+points(exclosure_lat_longs$Longitude,exclosure_lat_longs$Latitude, pch = 16, col ='green', 
+       cex = 1.5, main="Survey Site Locations")
 
 #Average difference in Change in VFX-change in VF for stations w/ observations for VF and VFX visits 1 and 3
 all_avg <- summarize(all_time4, mean(VFX_VF_dif))
 food_avg <- summarize(food_time4, mean(VFX_VF_dif))
 caterpillar_avg <- summarize(caterpillar_time4, mean(VFX_VF_dif))
+
+#Number of positive observations
+count(paired_all1, Visit1!=0)
+count(paired_all1, Visit3!=0)
+count(paired_food1,Visit1!=0)
+count(paired_food1, Visit3!=0)
+count(paired_caterpillar1,Visit1!=0)
+count(paired_caterpillar1, Visit3!=0)
