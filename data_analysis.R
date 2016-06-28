@@ -18,7 +18,7 @@ topdown3 <- topdown2[topdown2$Abundance >0, ]
 #Add Back "0" Observations from Original Data
 ##Identify "0" Observations from Original Data
 no_observations <- filter(topdown1, X0.2mm==0 & X2.5mm==0 & X5.10mm==0 & X10.20mm==0 & X.20mm==0)
-##Format "0" Observations Them to Match topdown3
+##Format "0" Observations to Match topdown3
 no_observations1 <- select(no_observations, -X0.2mm, -X2.5mm, -X5.10mm, -X10.20mm, -X.20mm)
 no_observations1$Abundance = 0
 no_observations1$Size = NA
@@ -324,7 +324,13 @@ library("maps")
 map('state', xlim = c(-85, -75), ylim = c(32, 40))
 points(exclosure_lat_longs$Longitude,exclosure_lat_longs$Latitude, pch = 16, col ='green', 
        cex = 1.5, main="Survey Site Locations")
-
-
+##Trying out analyzing by tree species
+uniqTree <- unique(topdown9$TreeSpecies)
+uniqTrees <-as.character(uniqTree)
+topdown9$TreeSpecies <- as.character(topdown9$TreeSpecies)
+trees= c()
+for (tree in uniqTrees) {
+  print(filter(topdown9, TreeSpecies == tree))}
+treeSp= data.frame(trees)
 
 
