@@ -29,7 +29,7 @@ all_orders1 = select(all_orders, -insectPhoto, -timeStamp, -isValid)
 #Merge Survey and Arth Data
 all_data <- merge (all_surveys1, all_orders1, 
                    by.x = "surveyID", 
-                   by.y = "surveyID")
+                   by.y = "surveyID", all.x= TRUE)
 
 #Identify Exclosure Surveys 
 exclosures <-filter(all_data, grepl("EXCLOSURE", siteNotes))
@@ -49,7 +49,8 @@ ex_pairs_allvisuals <- filter(visual_surveys, identifier
                             %in% exclosures$identifier)
 
 
-#Create dataframe with surveys from paired controls and exclosures on dates exclosures were surveyed
+#Create dataframe with surveys from paired controls and exclosures on dates exclosures 
+#were surveyed
 ex_pairs <-filter(ex_pairs_allvisuals, grepl("5/11/16", timeStart) |
                                        grepl("5/12/16", timeStart) | 
                                        grepl("5/16/16", timeStart) | 
@@ -61,14 +62,17 @@ ex_pairs1 <- merge(ex_pairs, exclosures, by.x = "orderID",
                                          by.y= "orderID",
                                          all.x = TRUE)
 ex_pairs2 <- select(ex_pairs1, -c(21:38), -identifier.y)
-ex_pairs2[is.na(ex_pairs2)] <- "VF"
 names(ex_pairs2) <- c("OrderID", "surveyID", "siteID", "userID", "circle",
                       "survey", "timeStart", "temperatureMin", "temperatureMax",
                       "siteNotes", "plantSpecies", "herbivory", "isValid",
                       "surveyType", "leafCount", "orderArthropod", "orderLength",
                       "orderNotes", "orderCount", "identifier", "TrapType")
 
-#Add dates column ***not a neat method, need to get "ifelse" to work***
+ex_pairs2["TrapType"][is.na(ex_pairs2["TrapType"])] <- "VF"
+ex_pairs2["orderCount"][is.na(ex_pairs2["orderCount"])] <- 0
+
+
+#Add dates column ***not a neat method, need to get something else to work***
 May11 <- filter(ex_pairs2, grepl("5/11/16", timeStart))
 May11$date <- "5/11/16"
 May11$VisitNumber <- "1"
@@ -91,7 +95,7 @@ June23$VisitNumber <- "3"
 
 June24 <- filter(ex_pairs2, grepl("6/24/16", timeStart))
 June24$date <- "6/24/16"
-June23$VisitNumber <- "3"
+June24$VisitNumber <- "3"
 
 ex_pairs3 <- bind_rows(May11, May12, May16, 
                        May18, June23, June24)
@@ -142,19 +146,18 @@ unique_surveys_count = unique_surveys_count[unique_surveys_count$Freq> 0,]
 #Create 3 New Dataframes Merging List of Unique Surveys with Summary Observations 
 #for Each Unique Survey for Each of the 3 Food Types
 all_abundance <- merge(unique_surveys_count, total_all,
-                                                   by.x="surveyID",
-                                                   by.y = "surveyID", 
-                                                   all.x = TRUE)
+                       by.x="surveyID",
+                       by.y = "surveyID", 
+                       all.x = TRUE)
 all_abundance1<- select(all_abundance, -Freq,
-                                             -TrapType.y, 
-                                             -siteID.y, 
-                                             -circle.y, 
-                                             -survey.y, 
-                                             -VisitNumber.y, 
-                                             -surveyID)
-
+                          -TrapType.y, 
+                          -siteID.y, 
+                          -circle.y, 
+                          -survey.y, 
+                          -VisitNumber.y, 
+                          -surveyID)
 names(all_abundance1) <- c("TrapType","siteID", "circle", "survey", "VisitNumber", "total_all")
-all_abundance1[is.na(all_abundance1)] <- 0
+
 
 
 food_abundance <- merge(unique_surveys_count, total_food,
@@ -169,7 +172,6 @@ food_abundance1<- select(food_abundance, -Freq,
                                          -VisitNumber.y, 
                                          -surveyID)
 names(food_abundance1) <- c("TrapType","siteID", "circle", "survey", "VisitNumber", "total_food")
-food_abundance1[is.na(all_abundance1)] <- 0
 
 caterpillar_abundance <- merge(unique_surveys_count, total_caterpillar,
                         by.x="surveyID",
@@ -183,7 +185,6 @@ caterpillar_abundance1<- select(caterpillar_abundance, -Freq,
                          -VisitNumber.y, 
                          -surveyID)
 names(caterpillar_abundance1) <- c("TrapType","siteID", "circle", "survey", "VisitNumber", "total_caterpillar")
-caterpillar_abundance1[is.na(all_abundance1)] <- 0
 
 
 #Spread TrapType column in 3 Food Type Datasets
@@ -208,7 +209,8 @@ caterpillar_time$visit_dif<-caterpillar_time$Visit3-caterpillar_time$Visit2
 library("coin")
 wilcox_test(visit_dif ~ TrapType, data=all_time)
 wilcox_test(visit_dif ~ TrapType, data=food_time)
-wilcox_test(visit_dif ~ TrapType, data=caterpillar_time)
+wilcox_test(visit_dif ~ TrapType, data=caterpillar_time) #how do I fix this error
+
 #*****Attempts at "ifelse" code to revisit
 if (grepl("5/11/16",ex_pairs2$timeStart)) {ex_pairs2$date = "5/11/16"}
 else {if (grepl("5/12/16",ex_pairs2$timeStart)) {ex_pairs2$date<-"5/12/16"
