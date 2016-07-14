@@ -11,7 +11,10 @@ all_orders <- read.table("tbl_orders_2016.txt",
                          sep= '\t', 
                          quote="\"",
                          header=TRUE)
-
+all_surveyTrees <- read.table("tbl_surveyTrees.txt", 
+                              sep= '\t', 
+                              quote="\"",
+                              header=TRUE)
 
 # Rename columns and remove unecessary ones
 names(all_surveys) = c("surveyID", "siteID", "userID", 
@@ -23,16 +26,30 @@ names(all_surveys) = c("surveyID", "siteID", "userID",
 names(all_orders) = c("orderID", "surveyID", "orderArthropod", 
                       "orderLength", "orderNotes", "orderCount",
                       "insectPhoto", "timeStamp", "isValid")
+names(all_surveyTrees) = c("siteID", "circle", "survey", "surveyTrees")
+
 all_surveys1= select(all_surveys, -timeSubmit, -Status, -leavePhoto, -source)
 all_orders1 = select(all_orders, -insectPhoto, -timeStamp, -isValid)
 
-#Merge Survey and Arth Data
+
+#Merge Survey, Arth, and official Plant Sp. Data
 all_data <- merge (all_surveys1, all_orders1, 
                    by.x = "surveyID", 
                    by.y = "surveyID", all.x= TRUE)
+###Create Identifier Column for Specific Survey locations
+all_data$identifier <- paste0(all_data$siteID, 
+                              all_data$circle, 
+                              all_data$survey)
+all_surveyTrees$identifier <- paste0(all_surveyTrees$siteID, 
+                          all_surveyTrees$circle, 
+                          all_surveyTrees$survey)
+all_data1 <- merge(all_data, all_surveyTrees, 
+                   by.x = "identifier", 
+                   by.y= "identifier", all.x= TRUE)
+all_data2 <- select(all_data1, -siteID.y, -circle.y, -survey.y, -plantSpecies) 
 
 #Identify Exclosure Surveys 
-exclosures <-filter(all_data, grepl("EXCLOSURE", siteNotes))
+exclosures <-filter(all_data2, grepl("EXCLOSURE", siteNotes))
 exclosures$TrapType <- "VFX"
 exclosures$identifier <- paste0(exclosures$siteID, 
                                 exclosures$circle,
@@ -40,11 +57,7 @@ exclosures$identifier <- paste0(exclosures$siteID,
 
 #Identify visual control surveys (identify paired surveys and remove 
 #beat sheet surveys)
-
-all_data$identifier <- paste0(all_data$siteID, 
-                              all_data$circle, 
-                              all_data$survey)
-visual_surveys <- filter(all_data, leafCount == "50")
+visual_surveys <- filter(all_data2, leafCount == "50")
 ex_pairs_allvisuals <- filter(visual_surveys, identifier 
                             %in% exclosures$identifier)
 
@@ -210,6 +223,35 @@ library("coin")
 wilcox_test(visit_dif ~ TrapType, data=all_time)
 wilcox_test(visit_dif ~ TrapType, data=food_time)
 wilcox_test(visit_dif ~ TrapType, data=caterpillar_time) #how do I fix this error
+#*****same analysis but performing Wilcox by plant species and location also***********
+##Analysis grouped by plant species
+##Add back plant species info
+all_time$identifier <- paste0(all_time$siteID, 
+                              all_time$circle, 
+                              all_time$survey)
+all_sp <-merge(all_time, all_surveyTrees, 
+                    by.x= "identifier", 
+                    by.y="identifier", all.x= TRUE)
+all_sp1<- select(all_sp, -identifier, -siteID.y,-survey.y, -circle.y)
+names(all_sp1) <- c("TrapType", "siteID", "circle", 
+                   "survey", "Visit1", "Visit2", 
+                   "Visit3", "visit_dif", "surveyTrees")
+
+#subset data frame by plant species
+all_BG_Spicebush <- filter(all_sp1, siteID == "8892356", surveyTrees=="Spicebush")
+all_BG_Sugar <- filter(all_sp1, siteID == "8892356", surveyTrees=="Sugar maple")
+all_BG_Beech <- filter(all_sp1, siteID == "8892356", surveyTrees=="American beech")
+all_PR_Sweet <- filter(all_sp1, siteID == "117", surveyTrees=="Sweet gum")
+all_PR_Box <- filter(all_sp1, siteID == "117", surveyTrees=="Box elder")
+all_PR_Red <- filter(all_sp1, siteID == "117", surveyTrees=="Red maple")
+
+#Run wilcoxon test on each plant species
+wilcox_test(visit_dif ~ TrapType, data=all_BG_Spicebush)
+wilcox_test(visit_dif ~ TrapType, data=all_BG_Sugar)
+wilcox_test(visit_dif ~ TrapType, data=all_BG_Beech)
+wilcox_test(visit_dif ~ TrapType, data=all_PR_Sweet)
+wilcox_test(visit_dif ~ TrapType, data=all_PR_Box)
+wilcox_test(visit_dif ~ TrapType, data=all_PR_Red)
 
 #*****Attempts at "ifelse" code to revisit
 if (grepl("5/11/16",ex_pairs2$timeStart)) {ex_pairs2$date = "5/11/16"}
