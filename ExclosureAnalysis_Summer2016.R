@@ -1,20 +1,12 @@
+#Analysis of Exclosure Data Summer 2016
 #Open necessary packages
 library(dplyr)
 library(tidyr)
 # Read in data
 setwd("~/Desktop/insect-exclosure")
-all_surveys <- read.table("tbl_surveys_2016.txt", 
-                          sep= '\t', 
-                          quote="\"", 
-                          header=TRUE)
-all_orders <- read.table("tbl_orders_2016.txt", 
-                         sep= '\t', 
-                         quote="\"",
-                         header=TRUE)
-all_surveyTrees <- read.table("tbl_surveyTrees.txt", 
-                              sep= '\t', 
-                              quote="\"",
-                              header=TRUE)
+all_surveys <- read.table("tbl_surveys_2016.txt", sep= '\t', quote="\"", header=TRUE)
+all_orders <- read.table("tbl_orders_2016.txt",  sep= '\t', quote="\"", header=TRUE)
+all_surveyTrees <- read.table("tbl_surveyTrees.txt", sep= '\t', quote="\"", header=TRUE)
 
 # Rename columns and remove unecessary ones
 names(all_surveys) = c("surveyID", "siteID", "userID", 
@@ -32,7 +24,7 @@ all_surveys1= select(all_surveys, -timeSubmit, -Status, -leavePhoto, -source)
 all_orders1 = select(all_orders, -insectPhoto, -timeStamp, -isValid)
 
 
-#Merge Survey, Arth, and official Plant Sp. Data
+#Add columns with arth order count and official plant species
 all_data <- merge (all_surveys1, all_orders1, 
                    by.x = "surveyID", 
                    by.y = "surveyID", all.x= TRUE)
@@ -47,13 +39,17 @@ all_data1 <- merge(all_data, all_surveyTrees,
                    by.x = "identifier", 
                    by.y= "identifier", all.x= TRUE)
 all_data2 <- select(all_data1, -siteID.y, -circle.y, -survey.y, -plantSpecies) 
+names(all_data2) <- c("identifier", "surveyID", "siteID", "userID", 
+                      "circle", "survey","timeStart","temperatureMin", 
+                      "temperatureMax","siteNotes","herbivory","isValid",
+                      "surveyType","leafCount","orderID","orderArthropod",
+                      "orderLength", "orderNotes",
+                      "orderCount", "surveyTrees")
 
 #Identify Exclosure Surveys 
 exclosures <-filter(all_data2, grepl("EXCLOSURE", siteNotes))
 exclosures$TrapType <- "VFX"
-exclosures$identifier <- paste0(exclosures$siteID, 
-                                exclosures$circle,
-                                exclosures$survey)
+exclosures$identifier <- paste0(exclosures$siteID, exclosures$circle, exclosures$survey)
 
 #Identify visual control surveys (identify paired surveys and remove 
 #beat sheet surveys)
@@ -74,12 +70,16 @@ ex_pairs <-filter(ex_pairs_allvisuals, grepl("5/11/16", timeStart) |
 ex_pairs1 <- merge(ex_pairs, exclosures, by.x = "orderID", 
                                          by.y= "orderID",
                                          all.x = TRUE)
-ex_pairs2 <- select(ex_pairs1, -c(21:38), -identifier.y)
-names(ex_pairs2) <- c("OrderID", "surveyID", "siteID", "userID", "circle",
+ex_pairs2 <- select(ex_pairs1, -identifier.y, -surveyID.y, -siteID.y, -userID.y, 
+                    -circle.y, -survey.y, -timeStart.y, -temperatureMin.y,
+                    -temperatureMax.y, -siteNotes.y, -herbivory.y, -isValid.y, 
+                    -surveyType.y, -leafCount.y, -orderArthropod.y, -orderLength.y, 
+                    -orderNotes.y, -orderCount.y, -surveyTrees.y)
+names(ex_pairs2) <- c("OrderID", "identifier", "surveyID", "siteID", "userID", "circle",
                       "survey", "timeStart", "temperatureMin", "temperatureMax",
-                      "siteNotes", "plantSpecies", "herbivory", "isValid",
+                      "siteNotes", "herbivory", "isValid",
                       "surveyType", "leafCount", "orderArthropod", "orderLength",
-                      "orderNotes", "orderCount", "identifier", "TrapType")
+                      "orderNotes", "orderCount", "surveyTrees", "TrapType")
 
 ex_pairs2["TrapType"][is.na(ex_pairs2["TrapType"])] <- "VF"
 ex_pairs2["orderCount"][is.na(ex_pairs2["orderCount"])] <- 0
@@ -119,8 +119,7 @@ ex_pairs3 <- bind_rows(May11, May12, May16,
 grouped_all <- ex_pairs3 %>% group_by(TrapType, siteID, circle, survey, VisitNumber)
 total_all <- (summarise(grouped_all, sum(orderCount)))
 total_all$surveyID<- paste0(total_all$siteID, total_all$VisitNumber,
-                            total_all$circle, total_all$survey,
-                            total_all$TrapType)
+                            total_all$circle, total_all$survey, total_all$TrapType)
 
 
 #Summarise Observations for Relevant Orders ("Bird food Arthropods") 
@@ -133,26 +132,21 @@ food_arthropods <- filter(ex_pairs3, orderArthropod %in% c("Caterpillars (Lepido
 grouped_food <- food_arthropods %>% group_by(TrapType, siteID, circle, survey, VisitNumber)
 total_food <- (summarise(grouped_food, sum(orderCount)))
 total_food$surveyID<- paste0(total_food$siteID, total_food$VisitNumber,
-                                total_food$circle, total_food$survey,
-                                total_food$TrapType)
+                                total_food$circle, total_food$survey,total_food$TrapType)
 
 #Summarise Observations for Caterpillars
 caterpillar <-filter(ex_pairs3, orderArthropod == "Caterpillars (Lepidoptera larvae)")
 grouped_caterpillar <- caterpillar %>% group_by(TrapType, siteID, circle, survey, VisitNumber)
 total_caterpillar <- (summarise(grouped_caterpillar, sum(orderCount)))
 total_caterpillar$surveyID<- paste0(total_caterpillar$siteID, total_caterpillar$VisitNumber,
-                                total_caterpillar$circle, total_caterpillar$survey,
-                                total_caterpillar$TrapType)
+                                total_caterpillar$circle, total_caterpillar$survey,total_caterpillar$TrapType)
 
 #Create Unique Surveys Dataframe
 unique_surveys<-unique(ex_pairs3[, c("TrapType", "siteID", "circle", "survey", "VisitNumber")])
 unique_surveys$surveyID<- paste0(unique_surveys$siteID, unique_surveys$VisitNumber, 
-                                    unique_surveys$circle, unique_surveys$survey,
-                                    unique_surveys$TrapType)
-unique_surveys_count <- data.frame(table(unique_surveys[, c("TrapType", 
-                                                               "siteID", 
-                                                               "circle", 
-                                                               "survey", 
+                                    unique_surveys$circle, unique_surveys$survey,unique_surveys$TrapType)
+unique_surveys_count <- data.frame(table(unique_surveys[, c("TrapType", "siteID", 
+                                                               "circle", "survey", 
                                                                "VisitNumber", "surveyID")]))
 unique_surveys_count = unique_surveys_count[unique_surveys_count$Freq> 0,]
 
@@ -162,13 +156,8 @@ all_abundance <- merge(unique_surveys_count, total_all,
                        by.x="surveyID",
                        by.y = "surveyID", 
                        all.x = TRUE)
-all_abundance1<- select(all_abundance, -Freq,
-                          -TrapType.y, 
-                          -siteID.y, 
-                          -circle.y, 
-                          -survey.y, 
-                          -VisitNumber.y, 
-                          -surveyID)
+all_abundance1<- select(all_abundance, -Freq, -TrapType.y, -siteID.y, -circle.y,
+                        -survey.y, -VisitNumber.y, -surveyID)
 names(all_abundance1) <- c("TrapType","siteID", "circle", "survey", "VisitNumber", "total_all")
 
 
@@ -177,33 +166,18 @@ food_abundance <- merge(unique_surveys_count, total_food,
                        by.x="surveyID",
                        by.y = "surveyID", 
                        all.x = TRUE)
-food_abundance1<- select(food_abundance, -Freq,
-                                         -TrapType.y, 
-                                         -siteID.y, 
-                                         -circle.y, 
-                                         -survey.y, 
-                                         -VisitNumber.y, 
-                                         -surveyID)
+food_abundance1<- select(food_abundance, -Freq, -TrapType.y, -siteID.y, -circle.y,
+                         -survey.y, -VisitNumber.y, -surveyID)
 names(food_abundance1) <- c("TrapType","siteID", "circle", "survey", "VisitNumber", "total_food")
 
 caterpillar_abundance <- merge(unique_surveys_count, total_caterpillar,
                         by.x="surveyID",
                         by.y = "surveyID", 
                         all.x = TRUE)
-caterpillar_abundance1<- select(caterpillar_abundance, -Freq,
-                         -TrapType.y, 
-                         -siteID.y, 
-                         -circle.y, 
-                         -survey.y, 
-                         -VisitNumber.y, 
-                         -surveyID)
+caterpillar_abundance1<- select(caterpillar_abundance, -Freq, -TrapType.y, -siteID.y, 
+                         -circle.y,  -survey.y, -VisitNumber.y, -surveyID)
 names(caterpillar_abundance1) <- c("TrapType","siteID", "circle", "survey", "VisitNumber", "total_caterpillar")
 
-
-#Spread TrapType column in 3 Food Type Datasets
-all_abundance2 <- spread(all_abundance1, TrapType, total_all)
-food_abundance2 <- spread(food_abundance1, TrapType, total_food)
-caterpillar_abundance2 <-spread(caterpillar_abundance1, TrapType, total_caterpillar)
 
 #Spread Visit 1 and Visit 3 for 3 Food Type Datasets and Create Difference Column to Format for Wilcox Test
 all_time <- spread(all_abundance1, VisitNumber, total_all)
@@ -223,6 +197,7 @@ library("coin")
 wilcox_test(visit_dif ~ TrapType, data=all_time)
 wilcox_test(visit_dif ~ TrapType, data=food_time)
 wilcox_test(visit_dif ~ TrapType, data=caterpillar_time) #how do I fix this error
+
 #*****same analysis but performing Wilcox by plant species and location also***********
 ##Analysis grouped by plant species
 ##Add back plant species info
@@ -253,6 +228,17 @@ wilcox_test(visit_dif ~ TrapType, data=all_PR_Sweet)
 wilcox_test(visit_dif ~ TrapType, data=all_PR_Box)
 wilcox_test(visit_dif ~ TrapType, data=all_PR_Red)
 
+#****************Analyze change in herbivorymerge(unique_herbivory, herbivory, by.x= "surveyID", by.y="surveyID", all.x=TRUE)
+unique_herbivory<-unique(ex_pairs3[, c("TrapType", "siteID", "circle", "survey", "VisitNumber", "herbivory")])
+
+#Spread Visit 1 and Visit 3 for Herbivory and Create Difference Column to Format for Wilcox Test
+herb <- spread(unique_herbivory, VisitNumber, herbivory)
+names(herb) = c('TrapType','siteID', "circle", "survey", "Visit1", "Visit2", "Visit3")
+herb$visit_dif<-herb$Visit3-herb$Visit2
+
+#Run Wilcox test
+wilcox_test(visit_dif ~ TrapType, data=herb)#class issue
+
 #*****Attempts at "ifelse" code to revisit
 if (grepl("5/11/16",ex_pairs2$timeStart)) {ex_pairs2$date = "5/11/16"}
 else {if (grepl("5/12/16",ex_pairs2$timeStart)) {ex_pairs2$date<-"5/12/16"
@@ -269,6 +255,6 @@ ex_pairs2$date <- (ifelse((grepl("5/11/16",ex_pairs2$timeStart)), "5/11/16", "NA
                    ifelse((grepl("5/18/16",ex_pairs2$timeStart)), "5/18/16", "NA")
                    ifelse((grepl("6/23/16",ex_pairs2$timeStart)), "6/23/16", "NA")
                    ifelse((grepl("6/24/16",ex_pairs2$timeStart)), "6/24/16", "NA"))
-
+#***Use substring on earlier text****
 
 
