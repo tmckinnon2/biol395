@@ -1,0 +1,46 @@
+Order,ArthCode,ComName,DataName
+Acarina,ACAR,"Mites, ticks",Mites (Acarina)
+Anoplura,ANOP,Sucking lice,
+Aranae,ARAN,Spiders,Spiders (Araneae; NOT daddy longlegs!)
+Blattaria,BLAT,Cockroaches (subfamily of ORTH),
+Chilopoda,CHIL,Centipedes,Centipedes (Chilopoda)
+Coleoptera,COLE,Beetles,Beetles (Coleoptera)
+Collembola,COLL,Springtails,Springtails (Collembola)
+Dermaptera,DERM,Earwigs,
+Diplopoda,DIPL,Millipedes,Millipedes (Diplopoda)
+Diplura,DIPU,Diplurans,
+Diptera,DIPT,Flies,Flies (Diptera)
+Embioptera,EMBI,Webspinners,
+Ephemeroptera,EPHE,Mayflies,Mayfiles (Ephemeroptera)
+Formicidae,FORM,Ants (subfamily of HYME),Ants (Formicidae)
+Hemiptera,HETE,True bugs,True Bugs (Heteroptera)
+Homoptera,HOMO,"Leafhoppers, aphids",
+Hymenoptera,HYME,Bees and wasps,"Bees and Wasps (Hymenoptera, excluding ants)"
+Isopoda,ISOP,"Pillbugs, roly-polies",
+Isoptera,ISOT,Termites,
+Lepidoptera-adults,LEPA,Moths and butterflies,"Moths, Butterflies (Lepidoptera)"
+Lepidoptera-larvae,LEPL,Caterpillars,Caterpillars (Lepidoptera larvae)
+Mantodea,MANT,Mantises (subfamily of ORTH),Mantodea (Mantids)
+Mecoptera,MECO,Scorpion flies,Scorpionflies (Mecoptera)
+Gastropoda,GAST,"Snails, slugs",Snails (Gastropoda)
+Mollusca,MOLL,mollusks,Mollusks (Mollusca)
+Neuroptera,NEUR,Lacewings,Lacewings (Neuroptera)
+None,NONE,none,NONE
+Odonata,ODON,"Dragonflies, damselflies",Damselflies and Dragonflies (Odonata)
+Orthoptera,ORTH,"Grasshoppers, crickets, katydids","Grasshoppers, Crickets (Orthoptera)"
+Phasmida,PHAS,Walkingstick (subfamily of ORTH),Walking sticks (Phasmatodea)
+Plecoptera,PLEC,Stoneflies,Stoneflies (Plecoptera)
+Protura,PROT,Proturans,
+Psocoptera,PSOC,Booklice and barklice,Bark lice (Psocoptera)
+Siphonaptera,SIPH,Fleas,
+Strepsiptera,STRE,Twisted-winged parasites,
+Thysanura,THYN,Silverfish,Silverfish (Thysanura)
+Tricoptera,TRIC,Caddisflies,Caddisflies (Tricoptera)
+Tysanoptera,THYP,Thrips,
+Unidentified,UNID,unidentified,UNIDENTIFIED (describe in Notes)
+Unidentified,UNID,unidentified,Unidentified
+Zoraptera,ZORA,Zorapterans,
+Auchenorrhyncha,AUCH,"leafhoppers, cicadas",Leaf hoppers and Cicadas (Auchenorrhyncha)
+Sternorrhyncha,STER,"aphids, psyllids",Aphids and Psyllids (Sternorrhyncha)
+Other,OTHR,other,Other (describe in Notes)
+Opiliones,OPIL,daddy longlegs,Daddy longlegs (Opiliones)

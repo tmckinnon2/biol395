@@ -4,9 +4,9 @@ library(dplyr)
 library(tidyr)
 # Read in data
 setwd("~/Desktop/insect-exclosure")
-all_surveys <- read.table("tbl_surveys_2016.txt", sep= '\t', quote="\"", header=TRUE)
-all_orders <- read.table("tbl_orders_2016.txt",  sep= '\t', quote="\"", header=TRUE)
-all_surveyTrees <- read.table("tbl_surveyTrees.txt", sep= '\t', quote="\"", header=TRUE)
+all_surveys <- read.csv('tbl_surveys.csv', header=F)
+all_orders <- read.csv('tbl_orders.csv', header=F)
+all_surveyTrees <- read.csv("tbl_surveyTrees.csv", header=F)
 
 # Rename columns and remove unecessary ones
 names(all_surveys) = c("surveyID", "siteID", "userID", 
@@ -122,8 +122,8 @@ total_all$surveyID<- paste0(total_all$siteID, total_all$VisitNumber,
                             total_all$circle, total_all$survey, total_all$TrapType)
 
 
-#Summarise Observations for Relevant Orders ("Bird food Arthropods") 
-food_arthropods <- filter(ex_pairs3, orderArthropod %in% c("Caterpillars (Lepidoptera larvae)", 
+#Summarise Observations for Relevant Orders great than 5 mm ("Bird food Arthropods") 
+food_arthropods <- filter(ex_pairs3, orderLength > "4", orderArthropod %in% c("Caterpillars (Lepidoptera larvae)", 
                                                        "Beetles (Coleoptera)", 
                                                        "Spiders (Araneae; NOT daddy longlegs!)", 
                                                        "True Bugs (Heteroptera)", 
@@ -159,7 +159,7 @@ all_abundance <- merge(unique_surveys_count, total_all,
 all_abundance1<- select(all_abundance, -Freq, -TrapType.y, -siteID.y, -circle.y,
                         -survey.y, -VisitNumber.y, -surveyID)
 names(all_abundance1) <- c("TrapType","siteID", "circle", "survey", "VisitNumber", "total_all")
-
+all_abundance1["total_all"][is.na(all_abundance1["total_all"])] <- 0
 
 
 food_abundance <- merge(unique_surveys_count, total_food,
@@ -169,6 +169,7 @@ food_abundance <- merge(unique_surveys_count, total_food,
 food_abundance1<- select(food_abundance, -Freq, -TrapType.y, -siteID.y, -circle.y,
                          -survey.y, -VisitNumber.y, -surveyID)
 names(food_abundance1) <- c("TrapType","siteID", "circle", "survey", "VisitNumber", "total_food")
+food_abundance1["total_food"][is.na(food_abundance1["total_food"])] <- 0
 
 caterpillar_abundance <- merge(unique_surveys_count, total_caterpillar,
                         by.x="surveyID",
@@ -177,7 +178,7 @@ caterpillar_abundance <- merge(unique_surveys_count, total_caterpillar,
 caterpillar_abundance1<- select(caterpillar_abundance, -Freq, -TrapType.y, -siteID.y, 
                          -circle.y,  -survey.y, -VisitNumber.y, -surveyID)
 names(caterpillar_abundance1) <- c("TrapType","siteID", "circle", "survey", "VisitNumber", "total_caterpillar")
-
+caterpillar_abundance1["total_caterpillar"][is.na(caterpillar_abundance1["total_caterpillar"])] <- 0
 
 #Spread Visit 1 and Visit 3 for 3 Food Type Datasets and Create Difference Column to Format for Wilcox Test
 all_time <- spread(all_abundance1, VisitNumber, total_all)
@@ -196,10 +197,13 @@ caterpillar_time$visit_dif<-caterpillar_time$Visit3-caterpillar_time$Visit2
 library("coin")
 wilcox_test(visit_dif ~ TrapType, data=all_time)
 wilcox_test(visit_dif ~ TrapType, data=food_time)
-wilcox_test(visit_dif ~ TrapType, data=caterpillar_time) #how do I fix this error
+wilcox_test(visit_dif ~ TrapType, data=caterpillar_time) 
 
-#*****same analysis but performing Wilcox by plant species and location also***********
-##Analysis grouped by plant species
+#Run analyses on dif between end arth density b/w treatment and control (independent of 2012 comparison)
+wilcox_test(Visit3~ TrapType, data=food_time)
+wilcox_test(Visit3~ TrapType, data=caterpillar_time)
+
+##Group by plant species
 ##Add back plant species info
 all_time$identifier <- paste0(all_time$siteID, 
                               all_time$circle, 
@@ -220,21 +224,26 @@ all_PR_Sweet <- filter(all_sp1, siteID == "117", surveyTrees=="Sweet gum")
 all_PR_Box <- filter(all_sp1, siteID == "117", surveyTrees=="Box elder")
 all_PR_Red <- filter(all_sp1, siteID == "117", surveyTrees=="Red maple")
 
-#Run wilcoxon test on each plant species
-wilcox_test(visit_dif ~ TrapType, data=all_BG_Spicebush)
-wilcox_test(visit_dif ~ TrapType, data=all_BG_Sugar)
-wilcox_test(visit_dif ~ TrapType, data=all_BG_Beech)
-wilcox_test(visit_dif ~ TrapType, data=all_PR_Sweet)
-wilcox_test(visit_dif ~ TrapType, data=all_PR_Box)
-wilcox_test(visit_dif ~ TrapType, data=all_PR_Red)
 
-#****************Analyze change in herbivorymerge(unique_herbivory, herbivory, by.x= "surveyID", by.y="surveyID", all.x=TRUE)
+
+
+
+
+
+
+
+
+
+
+
+#****************Analyze change in herbivory**********
 unique_herbivory<-unique(ex_pairs3[, c("TrapType", "siteID", "circle", "survey", "VisitNumber", "herbivory")])
 
 #Spread Visit 1 and Visit 3 for Herbivory and Create Difference Column to Format for Wilcox Test
 herb <- spread(unique_herbivory, VisitNumber, herbivory)
 names(herb) = c('TrapType','siteID', "circle", "survey", "Visit1", "Visit2", "Visit3")
 herb$visit_dif<-herb$Visit3-herb$Visit2
+herb$TrapType <- as.factor(herb$TrapType)
 
 #Run Wilcox test
 wilcox_test(visit_dif ~ TrapType, data=herb)#class issue
@@ -255,6 +264,6 @@ ex_pairs2$date <- (ifelse((grepl("5/11/16",ex_pairs2$timeStart)), "5/11/16", "NA
                    ifelse((grepl("5/18/16",ex_pairs2$timeStart)), "5/18/16", "NA")
                    ifelse((grepl("6/23/16",ex_pairs2$timeStart)), "6/23/16", "NA")
                    ifelse((grepl("6/24/16",ex_pairs2$timeStart)), "6/24/16", "NA"))
-#***Use substring on earlier text****
+#***Use substring on earlier text**** substr()
 
 
