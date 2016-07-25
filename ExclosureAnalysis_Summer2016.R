@@ -60,12 +60,12 @@ ex_pairs_allvisuals <- filter(visual_surveys, identifier
 
 #Create dataframe with surveys from paired controls and exclosures on dates exclosures 
 #were surveyed
-ex_pairs <-filter(ex_pairs_allvisuals, grepl("5/11/16", timeStart) |
-                                       grepl("5/12/16", timeStart) | 
-                                       grepl("5/16/16", timeStart) | 
-                                       grepl("5/18/16", timeStart) |
-                                       grepl("6/23/16", timeStart) | 
-                                       grepl("6/24/16", timeStart))
+ex_pairs <-filter(ex_pairs_allvisuals, grepl("2016-05-11", timeStart) |
+                                       grepl("2016-05-12", timeStart) | 
+                                       grepl("2016-05-16", timeStart) | 
+                                       grepl("2016-05-18", timeStart) |
+                                       grepl("2016-06-23", timeStart) | 
+                                       grepl("2016-06-24", timeStart))
 #Add column marking exclosures
 ex_pairs1 <- merge(ex_pairs, exclosures, by.x = "orderID", 
                                          by.y= "orderID",
@@ -86,28 +86,28 @@ ex_pairs2["orderCount"][is.na(ex_pairs2["orderCount"])] <- 0
 
 
 #Add dates column ***not a neat method, need to get something else to work***
-May11 <- filter(ex_pairs2, grepl("5/11/16", timeStart))
-May11$date <- "5/11/16"
+May11 <- filter(ex_pairs2, grepl("2016-05-11", timeStart))
+May11$date <- "2016-05-11"
 May11$VisitNumber <- "1"
 
-May12 <- filter(ex_pairs2, grepl("5/12/16", timeStart))
-May12$date <- "5/12/16"
+May12 <- filter(ex_pairs2, grepl("2016-05-12", timeStart))
+May12$date <- "2016-05-12"
 May12$VisitNumber <- "1"
 
-May16 <- filter(ex_pairs2, grepl("5/16/16", timeStart))
-May16$date <- "5/16/16"
+May16 <- filter(ex_pairs2, grepl("2016/05/16", timeStart))
+May16$date <- "2016-05-16"
 May16$VisitNumber <- "2"
 
-May18 <- filter(ex_pairs2, grepl("5/18/16", timeStart))
-May18$date <- "5/18/16"
+May18 <- filter(ex_pairs2, grepl("2016-05-18", timeStart))
+May18$date <- "2016-05-18"
 May18$VisitNumber <- "2"
 
-June23 <- filter(ex_pairs2, grepl("6/23/16", timeStart))
-June23$date <- "6/23/16"
+June23 <- filter(ex_pairs2, grepl("2016-06-23", timeStart))
+June23$date <- "2016-06-23"
 June23$VisitNumber <- "3"
 
-June24 <- filter(ex_pairs2, grepl("6/24/16", timeStart))
-June24$date <- "6/24/16"
+June24 <- filter(ex_pairs2, grepl("2016-06-24", timeStart))
+June24$date <- "2016-06-24"
 June24$VisitNumber <- "3"
 
 ex_pairs3 <- bind_rows(May11, May12, May16, 

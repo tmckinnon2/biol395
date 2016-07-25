@@ -1,4 +1,3 @@
-source(summary_functions.r)
 setwd("~/Desktop/insect-exclosure")
 ################################################
 # Script for reading in and cleaning data from
@@ -92,19 +91,13 @@ setwd("~/Desktop/insect-exclosure")
       #cleandata$count[cleandata$arthCode == "LEPL" & cleandata$count > 5] = 5
       
       
-      #Cleaning beat sheets (PR and BG) from 2016 on
-      visualsurveys <- filter(cleandata, leafCount == "50")
-      beatsheets <- filter(cleandata, leafCount !="50")
-      cleandata1<-bind_rows(beatsheets, cleandata)
-      
-      
-      
+     
       #-----------------------------------------------------------------------------------------------------------------
       
       ## Calculating biomass and adding this as a column to the cleandata
       
       # Source summary_functions.r if have not already
-      source(summary_functions.r)
+      source("summary_functions.r")
       
       # Create empty biomass vector
       cleandata$biomass = NA
@@ -125,20 +118,21 @@ setwd("~/Desktop/insect-exclosure")
       for (ord in arthlist) {
         b = reg.data[reg.data$arthCode == ord,]$slope
         a = reg.data[reg.data$arthCode == ord,]$coefficient
-        cleandata1$biomass[cleandata1$arthCode == ord] <- (a*(cleandata1$length[cleandata1$arthCode == ord])^(b))*(cleandata1$count[cleandata1$arthCode == ord])
+        cleandata$biomass[cleandata$arthCode == ord] <- (a*(cleandata$length[cleandata$arthCode == ord])^(b))*(cleandata$count[cleandata$arthCode == ord])
       }
       
       # Orders with regression data:
       regorders <- as.vector(reg.data.temp$arthCode)
       
-      # Subsetting cleandata1 now that it has the biomass column included
-      cleandata.pr <- cleandata[cleandata$site == 117 & cleandata$year == 2016,]
-      cleandata.bg <- cleandata[cleandata$site == 8892356 & cleandata$year == 2016,]
+      #Removing exclosure trees (only 2016)    
+      cleandata1 <-filter(cleandata, !(grepl("EXCLOSURE", notes.x)))
       
-      amsurvey.pr <- surveySubset(cleandata.pr, subset = "visual am", minLength = 5)
-      pmsurvey.pr <- surveySubset(cleandata.pr, subset = "visual pm", minLength = 5)
-      beatsheet.pr <- surveySubset(cleandata.pr, subset = "beat sheet", minLength = 5)
-      volunteer.pr <- surveySubset(cleandata.pr, subset = "volunteer", minLength = 5)
+       # Subsetting cleandata now that it has the biomass column included
+      cleandata.pr <- cleandata1[cleandata1$site == 117 & cleandata1$year == 2016,]
+      cleandata.bg <- cleandata1[cleandata1$site == 8892356 & cleandata1$year == 2016,]
+     
+       amsurvey.pr <- filter(cleandata.pr, leafCount==50 & (length>5 | length ==5))
+      beatsheet.pr <- filter(cleandata.pr, leafCount!=50 & (length>5 | length ==5))
       
-      amsurvey.bg <- surveySubset(cleandata.bg, subset = "visual am", minLength = 5)
-      beatsheet.bg <- surveySubset(cleandata.bg, subset = "beat sheet", minLength = 5)
+      amsurvey.bg <- filter(cleandata.bg, leafCount==50 & (length>5 | length ==5))
+      beatsheet.bg <- filter(cleandata.bg, leafCount!=50 & (length>5 | length ==5))
