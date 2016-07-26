@@ -6,7 +6,7 @@ library(tidyr)
 setwd("~/Desktop/insect-exclosure")
 all_surveys <- read.csv('tbl_surveys.csv', header=F)
 all_orders <- read.csv('tbl_orders.csv', header=F)
-all_surveyTrees <- read.csv("tbl_surveyTrees.csv", header=F)
+all_surveyTrees <- read.csv("tbl_surveyTrees.csv", header=T)
 
 # Rename columns and remove unecessary ones
 names(all_surveys) = c("surveyID", "siteID", "userID", 
@@ -94,7 +94,7 @@ May12 <- filter(ex_pairs2, grepl("2016-05-12", timeStart))
 May12$date <- "2016-05-12"
 May12$VisitNumber <- "1"
 
-May16 <- filter(ex_pairs2, grepl("2016/05/16", timeStart))
+May16 <- filter(ex_pairs2, grepl("2016-05-16", timeStart))
 May16$date <- "2016-05-16"
 May16$VisitNumber <- "2"
 
@@ -171,6 +171,9 @@ food_abundance1<- select(food_abundance, -Freq, -TrapType.y, -siteID.y, -circle.
 names(food_abundance1) <- c("TrapType","siteID", "circle", "survey", "VisitNumber", "total_food")
 food_abundance1["total_food"][is.na(food_abundance1["total_food"])] <- 0
 
+#Remove outliers
+food_time <-filter(caterpillar_abundance1, total_caterpillar < 6)
+
 caterpillar_abundance <- merge(unique_surveys_count, total_caterpillar,
                         by.x="surveyID",
                         by.y = "surveyID", 
@@ -179,6 +182,10 @@ caterpillar_abundance1<- select(caterpillar_abundance, -Freq, -TrapType.y, -site
                          -circle.y,  -survey.y, -VisitNumber.y, -surveyID)
 names(caterpillar_abundance1) <- c("TrapType","siteID", "circle", "survey", "VisitNumber", "total_caterpillar")
 caterpillar_abundance1["total_caterpillar"][is.na(caterpillar_abundance1["total_caterpillar"])] <- 0
+
+#Remove outliers
+caterpillar_time <-filter(caterpillar_abundance1, total_caterpillar < 6)
+
 
 #Spread Visit 1 and Visit 3 for 3 Food Type Datasets and Create Difference Column to Format for Wilcox Test
 all_time <- spread(all_abundance1, VisitNumber, total_all)
@@ -189,9 +196,10 @@ food_time <- spread(food_abundance1, VisitNumber, total_food)
 names(food_time) = c('TrapType','siteID', "circle", "survey", "Visit1", "Visit2", "Visit3")
 food_time$visit_dif<-food_time$Visit3-food_time$Visit2
 
-caterpillar_time <- spread(caterpillar_abundance1, VisitNumber, total_caterpillar)
+caterpillar_time <- spread(caterpillar_time, VisitNumber, total_caterpillar)
 names(caterpillar_time) = c('TrapType','siteID', "circle", "survey", "Visit1", "Visit2", "Visit3")
 caterpillar_time$visit_dif<-caterpillar_time$Visit3-caterpillar_time$Visit2
+
 
 #Run wilcox_test
 library("coin")
@@ -203,6 +211,35 @@ wilcox_test(visit_dif ~ TrapType, data=caterpillar_time)
 wilcox_test(Visit3~ TrapType, data=food_time)
 wilcox_test(Visit3~ TrapType, data=caterpillar_time)
 
+##Reshape dataframe for visualization
+food_time1 <- select(food_time, -Visit1, -Visit2, -visit_dif)
+food_Visit3<- spread(food_time1, TrapType, Visit3)
+names(food_Visit3) <- c("siteID", "circle", "survey", "Visit3VF", "Visit3VFX")
+food_Visit3$Visit3Dif <- (food_Visit3$Visit3VFX - food_Visit3$Visit3VF)
+food_Visit3$identifier <- paste0(food_Visit3$siteID, food_Visit3$circle, food_Visit3$survey)
+food_final<-merge(food_Visit3, all_surveyTrees, by.x = "identifier", by.y="identifier")
+food_final <- select(food_final, -siteID.y, -circle.y, -survey.y)
+names(food_final)<- c("identifier", "siteID", "circle", "survey", "Visit3VF", "Visit3VFX", "Visit3Dif", "treeSp")
+
+caterpillar_time1 <- select(caterpillar_time, -Visit1, -Visit2, -visit_dif)
+caterpillar_Visit3<- spread(caterpillar_time1, TrapType, Visit3)
+names(caterpillar_Visit3) <- c("siteID", "circle", "survey", "Visit3VF", "Visit3VFX")
+caterpillar_Visit3$Visit3Dif <- caterpillar_Visit3$Visit3VFX - caterpillar_Visit3$Visit3VF
+caterpillar_Visit3$identifier <- paste0(caterpillar_Visit3$siteID, caterpillar_Visit3$circle, caterpillar_Visit3$survey)
+caterpillar_final<-merge(caterpillar_Visit3, all_surveyTrees, by.x = "identifier", by.y="identifier")
+caterpillar_final <- select(caterpillar_final, -siteID.y, -circle.y, -survey.y)
+names(caterpillar_final)<- c("identifier", "siteID", "circle", "survey", "Visit3VF", "Visit3VFX", "Visit3Dif", "treeSp")
+
+##Visualize exclosure data vs. control data
+#Boxplot of difference in final arth densities by site
+boxplot(food_final$Visit3Dif ~food_final$siteID, main="food by site")
+boxplot(caterpillar_final$Visit3Dif ~caterpillar_final$siteID, main="caterpillars by site")
+
+#Boxplot of difference in final arth densities by plant species
+boxplot(food_final$Visit3Dif ~food_final$treeSp, main="food by tree species")
+boxplot(caterpillar_final$Visit3Dif ~caterpillar_final$treeSp, main="caterpillars by tree species")
+
+#*********************************************************************************************
 ##Group by plant species
 ##Add back plant species info
 all_time$identifier <- paste0(all_time$siteID, 
