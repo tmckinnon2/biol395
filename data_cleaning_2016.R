@@ -15,9 +15,6 @@ setwd("~/Desktop/insect-exclosure")
       library(lubridate)
       library(stringr)
       
-      # Set working directory
-      # setwd("~/Desktop/insect-exclosure")
-      
       # Read in data
       tempsurveys = read.csv('tbl_surveys.csv', header=F)
       orders = read.csv('tbl_orders.csv', header=F)
@@ -36,7 +33,7 @@ setwd("~/Desktop/insect-exclosure")
       surveys$survey = as.character(surveys$survey)
       
       # Create effortByDay dataframe for use in summary functions
-      surveys$date = as.character(as.POSIXlt(word(surveys$dateStart, 1, sep = " "), format = "%Y-%m-%d"))#this returns date column w/ NAs... have tried messing with format (changing y/Y, start word, no obvious explanation) 
+      surveys$date = as.character(as.POSIXlt(word(surveys$dateStart, 1, sep = " "), format = "%Y-%m-%d")) #careful: if you open the csv before reading in the date format will be changed and this won't work
       effortByDay = data.frame(table(surveys[, c('site', 'date')]))
       names(effortByDay) = c('site', 'date', 'numSurveys') #numSurveys is creating a new column?
       effortByDay = effortByDay[effortByDay$numSurveys!=0, ]
@@ -52,7 +49,7 @@ setwd("~/Desktop/insect-exclosure")
       orders2$julianday = yday(orders2$date)
       
       orders3 = orders2[, c('surveyID', 'userID','site', 'survey', 'circle', 'date','julianday',
-                            'plantSp','herbivory', 'leafCount', 'arthropod','length',
+                            'plantSp','herbivory', 'surveyType', 'leafCount', 'arthropod','length',
                             'count','notes.y','notes.x')]
       
       # Add column with arthopod order code
@@ -61,7 +58,7 @@ setwd("~/Desktop/insect-exclosure")
       names(arthcodes1) = c('arthCode', 'arthropod')
       cleandata <- merge(orders3, arthcodes1, all.x = TRUE, sort = FALSE)
       cleandata <- cleandata[, c('surveyID', 'userID','site', 'survey', 'circle', 'date','julianday',
-                                 'plantSp','herbivory', 'leafCount','arthropod','arthCode','length',
+                                 'plantSp','herbivory', 'surveyType', 'leafCount','arthropod','arthCode','length',
                                  'count','notes.y','notes.x')]
       cleandata <- cleandata[order(cleandata$date),]
       
@@ -90,7 +87,31 @@ setwd("~/Desktop/insect-exclosure")
       # or
       #cleandata$count[cleandata$arthCode == "LEPL" & cleandata$count > 5] = 5
       
+      # Cleaning beat sheets (PR and BG) and isolating # leaves into a new column
+      beatsheet_pre2016 <- cleandata[grep("BEAT SHEET", cleandata$notes.x), ] 
+      beatsheet_post2016 <- cleandata[((cleandata$leafCount != "50") & (cleandata$year>= "2016")) | (cleandata$surveyType=="Beat_Sheet"),] #separates beatsheets in to their own dataframe
       
+      leavesNumTemp0 <- word(beatsheet_pre2016$notes.x, -1, sep = "BEAT SHEET; ")
+      leavesNumTemp <- word(leavesNumTemp0, -1, sep = "= ")
+      leavesNumTemp1 <- word(leavesNumTemp, -1, sep = "Leaves  ")
+      leavesNumTemp2 <- word(leavesNumTemp1, -1, sep = "Leaves=")
+      leavesNumTemp3 <- word(leavesNumTemp2, 1, sep = ";")
+      leavesNumTemp4 <- word(leavesNumTemp3, 1, sep = ",")
+      leavesNumTemp5 <- gsub(" ", "", leavesNumTemp4)
+      leavesNumTemp6 <- gsub("\n", "", leavesNumTemp5)
+      leavesNumTemp7 <- gsub("Unknown", NA, leavesNumTemp6)
+      leavesNumTemp8 <- gsub("unknown", NA, leavesNumTemp7)
+      beatsheet_pre2016$leavesNum <- as.numeric(leavesNumTemp8)
+      beatsheet_post2016$leavesNum = NA
+      beatsheet<-rbind(beatsheet_pre2016, beatsheet_post2016)
+      beatsheet$surveyType <- "Beat_Sheet"
+      cleandata$leavesNum = NA
+      cleandata <- cleandata[!cleandata$surveyID %in% beatsheet$surveyID, ]
+      cleandata <- rbind(cleandata, beatsheet)
+      names(cleandata) <- c("surveyID", "userID", "site", "survey", "circle", "date",
+                           "julianday", "plantSp", "herbivory", "surveyType", "leafCount", "arthropod", "arthCode",
+                           "length", "count", "notes.y", "notes.x", "wetLeaves", "year", "leavesNum")
+      cleandata["surveyType"][is.na(cleandata["surveyType"])] <- "Visual"
      
       #-----------------------------------------------------------------------------------------------------------------
       
@@ -109,12 +130,13 @@ setwd("~/Desktop/insect-exclosure")
       reg.data.temp$coefficient <- 10^(reg.data.temp$intercept)
       
       # Create list of arthropod orders (by code)
-      arthlist <- as.vector(arthcodes$ArthCode) # arthcodes from data_cleaning.R
+      arthcodes1 <- filter(arthcodes, ArthCode %in% reg.data.temp$arthCode)
+      arthlist <- as.vector(arthcodes1$ArthCode) # arthcodes from data_cleaning.R
       
-      # Merge reg.data.temp and arthlist so NAs will be calculated
+       # Merge reg.data.temp and arthlist so NAs will be calculated
       reg.data <- merge(reg.data.temp, arthcodes, by.x = 'arthCode', by.y = 'ArthCode', all = T)
-      
-      # For loop for calculating biomass for each observation
+     
+       # For loop for calculating biomass for each observation
       for (ord in arthlist) {
         b = reg.data[reg.data$arthCode == ord,]$slope
         a = reg.data[reg.data$arthCode == ord,]$coefficient
@@ -125,14 +147,16 @@ setwd("~/Desktop/insect-exclosure")
       regorders <- as.vector(reg.data.temp$arthCode)
       
       #Removing exclosure trees (only 2016)    
-      cleandata1 <-filter(cleandata, !(grepl("EXCLOSURE", notes.x)))
+      cleandata <-filter(cleandata, !(grepl("EXCLOSURE", notes.x)))
       
        # Subsetting cleandata now that it has the biomass column included
-      cleandata.pr <- cleandata1[cleandata1$site == 117 & cleandata1$year == 2016,]
-      cleandata.bg <- cleandata1[cleandata1$site == 8892356 & cleandata1$year == 2016,]
-     
-       amsurvey.pr <- filter(cleandata.pr, leafCount==50 & (length>5 | length ==5))
-      beatsheet.pr <- filter(cleandata.pr, leafCount!=50 & (length>5 | length ==5))
+      # Subsetting cleandata now that it has the biomass column included
+      cleandata.pr <- cleandata[cleandata$site == 117 & cleandata$year == 2016,]
+      cleandata.bg <- cleandata[cleandata$site == 8892356 & cleandata$year == 2016,]
       
-      amsurvey.bg <- filter(cleandata.bg, leafCount==50 & (length>5 | length ==5))
-      beatsheet.bg <- filter(cleandata.bg, leafCount!=50 & (length>5 | length ==5))
+      amsurvey.pr <- surveySubset(cleandata.pr, subset = "visual am", minLength = 5)
+      pmsurvey.pr <- surveySubset(cleandata.pr, subset = "visual pm", minLength = 5)
+      beatsheet.pr <- surveySubset(cleandata.pr, subset = "beat sheet", minLength = 5)
+      volunteer.pr <- surveySubset(cleandata.pr, subset = "volunteer", minLength = 5)
+      
+     
