@@ -121,7 +121,9 @@ setwd("~/Desktop/insect-exclosure")
       source("summary_functions.r")
       
       # Create empty biomass vector
-      cleandata$biomass = NA
+      cleandata = cleandata[!is.na(cleandata$surveyID),]
+      
+      cleandata$biomass = numeric(length=nrow(cleandata))
       
       # y = a(x)^b
       # Read in arthropod regression data with slope = b and intercept = log(a)
