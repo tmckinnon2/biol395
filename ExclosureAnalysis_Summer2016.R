@@ -45,13 +45,25 @@ names(all_data2) <- c("identifier", "surveyID", "siteID", "userID",
                       "surveyType","leafCount","orderID","orderArthropod",
                       "orderLength", "orderNotes",
                       "orderCount", "surveyTrees")
+#Change herbivory to percent values (midpoint of range for Categories 1-3, 37.5 for 4)
+all_data2$percent_herb <- ifelse(all_data2$herbivory==0, "0",
+                          ifelse(all_data2$herbivory==1, "2.5",
+                          ifelse(all_data2$herbivory==2, "7.5",
+                          ifelse(all_data2$herbivory==3, "17.5", 
+                          ifelse(all_data2$herbivory==4, "37.5", NA)))))
+
+#Change Percent Herbivory to a numeric vector
+all_data2$percent_herb <- as.numeric(all_data2$percent_herb)                          
+
+#Add date column
+all_data2$date = as.character(as.POSIXlt(word(all_data2$timeStart, 1, sep = " "), format = "%Y-%m-%d"))                        
 
 #Identify Exclosure Surveys 
 exclosures <-filter(all_data2, grepl("EXCLOSURE", siteNotes))
 exclosures$TrapType <- "VFX"
 exclosures$identifier <- paste0(exclosures$siteID, exclosures$circle, exclosures$survey)
 
-#Identify visual control surveys (identify paired surveys and remove 
+#Identify visual control surveys, identify paired surveys and remove 
 #beat sheet surveys)
 visual_surveys <- filter(all_data2, leafCount == "50")
 ex_pairs_allvisuals <- filter(visual_surveys, identifier 
@@ -70,49 +82,30 @@ ex_pairs <-filter(ex_pairs_allvisuals, grepl("2016-05-11", timeStart) |
 ex_pairs1 <- merge(ex_pairs, exclosures, by.x = "orderID", 
                                          by.y= "orderID",
                                          all.x = TRUE)
-ex_pairs2 <- select(ex_pairs1, -identifier.y, -surveyID.y, -siteID.y, -userID.y, 
+ex_pairs2 <- select(ex_pairs1, -date.y, -identifier.y, -surveyID.y, -siteID.y, -userID.y, 
                     -circle.y, -survey.y, -timeStart.y, -temperatureMin.y,
                     -temperatureMax.y, -siteNotes.y, -herbivory.y, -isValid.y, 
                     -surveyType.y, -leafCount.y, -orderArthropod.y, -orderLength.y, 
-                    -orderNotes.y, -orderCount.y, -surveyTrees.y)
+                    -orderNotes.y, -orderCount.y, -surveyTrees.y, -percent_herb.y, -date.y)
 names(ex_pairs2) <- c("OrderID", "identifier", "surveyID", "siteID", "userID", "circle",
                       "survey", "timeStart", "temperatureMin", "temperatureMax",
                       "siteNotes", "herbivory", "isValid",
                       "surveyType", "leafCount", "orderArthropod", "orderLength",
-                      "orderNotes", "orderCount", "surveyTrees", "TrapType")
-
+                      "orderNotes", "orderCount", "surveyTrees", "percent_herb", "date", "TrapType")
+#Mark visual surveys
 ex_pairs2["TrapType"][is.na(ex_pairs2["TrapType"])] <- "VF"
+
+#Mark surveys without arthropod observations as 0s
 ex_pairs2["orderCount"][is.na(ex_pairs2["orderCount"])] <- 0
 
 
-#Add dates column ***not a neat method, need to get something else to work***
-May11 <- filter(ex_pairs2, grepl("2016-05-11", timeStart))
-May11$date <- "2016-05-11"
-May11$VisitNumber <- "1"
-
-May12 <- filter(ex_pairs2, grepl("2016-05-12", timeStart))
-May12$date <- "2016-05-12"
-May12$VisitNumber <- "1"
-
-May16 <- filter(ex_pairs2, grepl("2016-05-16", timeStart))
-May16$date <- "2016-05-16"
-May16$VisitNumber <- "2"
-
-May18 <- filter(ex_pairs2, grepl("2016-05-18", timeStart))
-May18$date <- "2016-05-18"
-May18$VisitNumber <- "2"
-
-June23 <- filter(ex_pairs2, grepl("2016-06-23", timeStart))
-June23$date <- "2016-06-23"
-June23$VisitNumber <- "3"
-
-June24 <- filter(ex_pairs2, grepl("2016-06-24", timeStart))
-June24$date <- "2016-06-24"
-June24$VisitNumber <- "3"
-
-ex_pairs3 <- bind_rows(May11, May12, May16, 
-                       May18, June23, June24)
-
+#Add Visit Number for exclosure sampling days
+ex_pairs2$VisitNumber <- ifelse(ex_pairs2$date=="2016-05-11", "1",
+                         ifelse(ex_pairs2$date=="2016-05-12", "1",
+                         ifelse(ex_pairs2$date=="2016-05-16", "2",
+                         ifelse(ex_pairs2$date=="2016-05-18", "2", 
+                         ifelse(ex_pairs2$date=="2016-06-23", "3",
+                         ifelse(ex_pairs2$date=="2016-06-24", "3",  NA))))))
 
 #Summarise observations for 3 food types (start 2012 reshaping analysis code)
 #Summarise Observations for All Arthropods (Arthropods greater than 2 mm)
@@ -271,45 +264,32 @@ all_PR_Box <- filter(all_sp1, siteID == "117", surveyTrees=="Box elder")
 all_PR_Red <- filter(all_sp1, siteID == "117", surveyTrees=="Red maple")
 
 
-
-
-
-
-
-
-
-
-
-
-
 #****************Analyze change in herbivory**********
-unique_herbivory<-unique(ex_pairs3[, c("TrapType", "siteID", "circle", "survey", "VisitNumber", "herbivory")])
+unique_herbivory<-unique(ex_pairs3[, c("TrapType", "siteID", "circle", "survey", "VisitNumber", "percent_herb")])
+
 
 #Spread Visit 1 and Visit 3 for Herbivory and Create Difference Column to Format for Wilcox Test
-herb <- spread(unique_herbivory, VisitNumber, herbivory)
+herb <- spread(unique_herbivory, VisitNumber, percent_herb)
 names(herb) = c('TrapType','siteID', "circle", "survey", "Visit1", "Visit2", "Visit3")
 herb$visit_dif<-herb$Visit3-herb$Visit2
 herb$TrapType <- as.factor(herb$TrapType)
 
 #Run Wilcox test
-wilcox_test(visit_dif ~ TrapType, data=herb)#class issue
+wilcox_test(visit_dif ~ TrapType, data=herb)
 
-#*****Attempts at "ifelse" code to revisit
-if (grepl("5/11/16",ex_pairs2$timeStart)) {ex_pairs2$date = "5/11/16"}
-else {if (grepl("5/12/16",ex_pairs2$timeStart)) {ex_pairs2$date<-"5/12/16"
-} else {if (grepl("5/16/16",ex_pairs2$timeStart)) {ex_pairs2$date<-"5/16/16"
-} else {if (grepl("5/18/16",ex_pairs2$timeStart)) {ex_pairs2$date<-"5/18/16"
-} else {if (grepl("6/23/16",ex_pairs2$timeStart)) {ex_pairs2$date<-"6/23/16"
-} else {if (grepl("6/24/16",ex_pairs2$timeStart)) {ex_pairs2$date<-"6/24/16"
-} else ex_pairs2$date <- "NA"}}}}} 
+#Summarise observations for 2016 herbivory by date, and site
+visual_surveys_clean<- visual_surveys[!(visual_surveys$surveyID %in% exclosures$surveyID), ]
+visual_surveys_clean <-filter(visual_surveys_clean, grepl("2016", date))
+grouped_site <- visual_surveys_clean %>% group_by(siteID, date)
+mean_site_herb <- (summarise(grouped_site, mean(percent_herb)))
+mean_site_herb<-data.frame(mean_site_herb)
 
+#Summarise observations for 2016 herbivory by date, site, and tree species
+grouped_species <- visual_surveys_clean %>% group_by(siteID, date, surveyTrees)
+mean_species_herb <- (summarise(grouped_species, mean(percent_herb)))
+mean_species_herb <- data.frame(mean_species_herb)
 
-ex_pairs2$date <- (ifelse((grepl("5/11/16",ex_pairs2$timeStart)), "5/11/16", "NA")
-                   ifelse((grepl("5/12/16",ex_pairs2$timeStart)), "5/12/16", "NA")
-                   ifelse((grepl("5/16/16",ex_pairs2$timeStart)), "5/16/16", "NA")
-                   ifelse((grepl("5/18/16",ex_pairs2$timeStart)), "5/18/16", "NA")
-                   ifelse((grepl("6/23/16",ex_pairs2$timeStart)), "6/23/16", "NA")
-                   ifelse((grepl("6/24/16",ex_pairs2$timeStart)), "6/24/16", "NA"))
-#***Use substring on earlier text**** substr()
-
+#Visualizing Herbivory
+plot.default(mean_site_herb$mean.percent_herb., mean_site_herb$date)
+plot.default(mean_species_herb$mean.percent_herb., mean_species_herb$date)
 
