@@ -172,7 +172,8 @@ names(food_abundance1) <- c("TrapType","siteID", "circle", "survey", "VisitNumbe
 food_abundance1["total_food"][is.na(food_abundance1["total_food"])] <- 0
 
 #Remove outliers
-food_time <-filter(caterpillar_abundance1, total_caterpillar < 6)
+food_time <-filter(caterpillar_abundance1, total_caterpillar > 6)
+caterpilar_time <- filter(food_abundance1, total_food > 6)
 
 caterpillar_abundance <- merge(unique_surveys_count, total_caterpillar,
                         by.x="surveyID",
@@ -232,12 +233,20 @@ names(caterpillar_final)<- c("identifier", "siteID", "circle", "survey", "Visit3
 
 ##Visualize exclosure data vs. control data
 #Boxplot of difference in final arth densities by site
-boxplot(food_final$Visit3Dif ~food_final$siteID, main="food by site")
-boxplot(caterpillar_final$Visit3Dif ~caterpillar_final$siteID, main="caterpillars by site")
+boxplot(food_final$Visit3Dif ~food_final$siteID, main="Arth Density for Relevant Orders by Site", 
+        ylab="FinalVisit Difference in Arth Density (treatment-control)", new=T)
+boxplot(caterpillar_final$Visit3Dif ~caterpillar_final$siteID, main="Caterpillar Density by Site", ylab="FinalVisit Difference in Arth Density (treatment-control)", new=T)
 
 #Boxplot of difference in final arth densities by plant species
-boxplot(food_final$Visit3Dif ~food_final$treeSp, main="food by tree species")
-boxplot(caterpillar_final$Visit3Dif ~caterpillar_final$treeSp, main="caterpillars by tree species")
+boxplot(food_final$Visit3Dif ~food_final$treeSp, main="Arth Density for Relevant Orders by Tree Species", 
+        ylab="FinalVisit Difference in Arth Density (treatment-control)", new=T)
+boxplot(caterpillar_final$Visit3Dif ~caterpillar_final$treeSp, main="Caterpillar Density by Tree Species", 
+        ylab="FinalVisit Difference in Caterpillar Density (treatment-control)", new=T)
+
+boxplot(food_final$Visit3Dif,food_final$treeSp=="American beech", main="Arth Density for Relevant Orders by Tree Species", 
+        ylab="FinalVisit Difference in Arth Density (treatment-control)")
+boxplot(food_final$Visit3Dif,food_final$treeSp=="Box elder", main="Arth Density for Relevant Orders by Tree Species", 
+        ylab="FinalVisit Difference in Arth Density (treatment-control)")
 
 #*********************************************************************************************
 ##Group by plant species

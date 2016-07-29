@@ -14,6 +14,9 @@ setwd("~/Desktop/insect-exclosure")
       library(dplyr)
       library(lubridate)
       library(stringr)
+
+      # Source summary_functions.r if have not already
+      source("summary_functions_2016.r")
       
       # Read in data
       tempsurveys = read.csv('tbl_surveys.csv', header=F)
@@ -117,11 +120,9 @@ setwd("~/Desktop/insect-exclosure")
       
       ## Calculating biomass and adding this as a column to the cleandata
       
-      # Source summary_functions.r if have not already
-      source("summary_functions.r")
       
       # Create empty biomass vector
-      cleandata$biomass = NA
+      cleandata$biomass = numeric(length = nrow(cleandata))
       
       # y = a(x)^b
       # Read in arthropod regression data with slope = b and intercept = log(a)
@@ -130,18 +131,19 @@ setwd("~/Desktop/insect-exclosure")
       reg.data.temp$coefficient <- 10^(reg.data.temp$intercept)
       
       # Create list of arthropod orders (by code)
-      arthcodes1 <- filter(arthcodes, ArthCode %in% reg.data.temp$arthCode)
-      arthlist <- as.vector(arthcodes1$ArthCode) # arthcodes from data_cleaning.R
+      arthlist <- as.character(reg.data.temp$arthCode) # arthcodes from data_cleaning.R
       
        # Merge reg.data.temp and arthlist so NAs will be calculated
       reg.data <- merge(reg.data.temp, arthcodes, by.x = 'arthCode', by.y = 'ArthCode', all = T)
      
        # For loop for calculating biomass for each observation
+      # For loop for calculating biomass for each observation
       for (ord in arthlist) {
         b = reg.data[reg.data$arthCode == ord,]$slope
         a = reg.data[reg.data$arthCode == ord,]$coefficient
         cleandata$biomass[cleandata$arthCode == ord] <- (a*(cleandata$length[cleandata$arthCode == ord])^(b))*(cleandata$count[cleandata$arthCode == ord])
       }
+      
       
       # Orders with regression data:
       regorders <- as.vector(reg.data.temp$arthCode)
@@ -149,7 +151,6 @@ setwd("~/Desktop/insect-exclosure")
       #Removing exclosure trees (only 2016)    
       cleandata <-filter(cleandata, !(grepl("EXCLOSURE", notes.x)))
       
-       # Subsetting cleandata now that it has the biomass column included
       # Subsetting cleandata now that it has the biomass column included
       cleandata.pr <- cleandata[cleandata$site == 117 & cleandata$year == 2016,]
       cleandata.bg <- cleandata[cleandata$site == 8892356 & cleandata$year == 2016,]
