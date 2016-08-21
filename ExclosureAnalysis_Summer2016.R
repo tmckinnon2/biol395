@@ -2,6 +2,9 @@
 #Open necessary packages
 library(dplyr)
 library(tidyr)
+library(stringr)
+library(coin)
+library(lattice)
 # Read in data
 setwd("~/Desktop/insect-exclosure")
 all_surveys <- read.csv('tbl_surveys.csv', header=F)
@@ -109,14 +112,14 @@ ex_pairs2$VisitNumber <- ifelse(ex_pairs2$date=="2016-05-11", "1",
 
 #Summarise observations for 3 food types (start 2012 reshaping analysis code)
 #Summarise Observations for All Arthropods (Arthropods greater than 2 mm)
-grouped_all <- ex_pairs3 %>% group_by(TrapType, siteID, circle, survey, VisitNumber)
+grouped_all <- ex_pairs2 %>% group_by(TrapType, siteID, circle, survey, VisitNumber)
 total_all <- (summarise(grouped_all, sum(orderCount)))
 total_all$surveyID<- paste0(total_all$siteID, total_all$VisitNumber,
                             total_all$circle, total_all$survey, total_all$TrapType)
 
 
 #Summarise Observations for Relevant Orders great than 5 mm ("Bird food Arthropods") 
-food_arthropods <- filter(ex_pairs3, orderLength > "4", orderArthropod %in% c("Caterpillars (Lepidoptera larvae)", 
+food_arthropods <- filter(ex_pairs2, orderLength > "4", orderArthropod %in% c("Caterpillars (Lepidoptera larvae)", 
                                                        "Beetles (Coleoptera)", 
                                                        "Spiders (Araneae; NOT daddy longlegs!)", 
                                                        "True Bugs (Heteroptera)", 
@@ -128,14 +131,14 @@ total_food$surveyID<- paste0(total_food$siteID, total_food$VisitNumber,
                                 total_food$circle, total_food$survey,total_food$TrapType)
 
 #Summarise Observations for Caterpillars
-caterpillar <-filter(ex_pairs3, orderArthropod == "Caterpillars (Lepidoptera larvae)")
+caterpillar <-filter(ex_pairs2, orderArthropod == "Caterpillars (Lepidoptera larvae)")
 grouped_caterpillar <- caterpillar %>% group_by(TrapType, siteID, circle, survey, VisitNumber)
 total_caterpillar <- (summarise(grouped_caterpillar, sum(orderCount)))
 total_caterpillar$surveyID<- paste0(total_caterpillar$siteID, total_caterpillar$VisitNumber,
                                 total_caterpillar$circle, total_caterpillar$survey,total_caterpillar$TrapType)
 
 #Create Unique Surveys Dataframe
-unique_surveys<-unique(ex_pairs3[, c("TrapType", "siteID", "circle", "survey", "VisitNumber")])
+unique_surveys<-unique(ex_pairs2[, c("TrapType", "siteID", "circle", "survey", "VisitNumber")])
 unique_surveys$surveyID<- paste0(unique_surveys$siteID, unique_surveys$VisitNumber, 
                                     unique_surveys$circle, unique_surveys$survey,unique_surveys$TrapType)
 unique_surveys_count <- data.frame(table(unique_surveys[, c("TrapType", "siteID", 
@@ -164,9 +167,6 @@ food_abundance1<- select(food_abundance, -Freq, -TrapType.y, -siteID.y, -circle.
 names(food_abundance1) <- c("TrapType","siteID", "circle", "survey", "VisitNumber", "total_food")
 food_abundance1["total_food"][is.na(food_abundance1["total_food"])] <- 0
 
-#Remove outliers
-food_time <-filter(caterpillar_abundance1, total_caterpillar > 6)
-caterpilar_time <- filter(food_abundance1, total_food > 6)
 
 caterpillar_abundance <- merge(unique_surveys_count, total_caterpillar,
                         by.x="surveyID",
@@ -178,7 +178,8 @@ names(caterpillar_abundance1) <- c("TrapType","siteID", "circle", "survey", "Vis
 caterpillar_abundance1["total_caterpillar"][is.na(caterpillar_abundance1["total_caterpillar"])] <- 0
 
 #Remove outliers
-caterpillar_time <-filter(caterpillar_abundance1, total_caterpillar < 6)
+food_time <-filter(food_abundance1, total_food > 6)
+caterpilar_time <- filter(caterpillar_abundance1, total_caterpillar > 6)
 
 
 #Spread Visit 1 and Visit 3 for 3 Food Type Datasets and Create Difference Column to Format for Wilcox Test
@@ -190,13 +191,12 @@ food_time <- spread(food_abundance1, VisitNumber, total_food)
 names(food_time) = c('TrapType','siteID', "circle", "survey", "Visit1", "Visit2", "Visit3")
 food_time$visit_dif<-food_time$Visit3-food_time$Visit2
 
-caterpillar_time <- spread(caterpillar_time, VisitNumber, total_caterpillar)
+caterpillar_time <- spread(caterpillar_abundance1, VisitNumber, total_caterpillar)
 names(caterpillar_time) = c('TrapType','siteID', "circle", "survey", "Visit1", "Visit2", "Visit3")
 caterpillar_time$visit_dif<-caterpillar_time$Visit3-caterpillar_time$Visit2
 
 
 #Run wilcox_test
-library("coin")
 wilcox_test(visit_dif ~ TrapType, data=all_time)
 wilcox_test(visit_dif ~ TrapType, data=food_time)
 wilcox_test(visit_dif ~ TrapType, data=caterpillar_time) 
@@ -240,6 +240,12 @@ boxplot(food_final$Visit3Dif,food_final$treeSp=="American beech", main="Arth Den
         ylab="FinalVisit Difference in Arth Density (treatment-control)")
 boxplot(food_final$Visit3Dif,food_final$treeSp=="Box elder", main="Arth Density for Relevant Orders by Tree Species", 
         ylab="FinalVisit Difference in Arth Density (treatment-control)")
+#Boxplot of average arth densities for exclosures and controls
+boxplot(food_final$Visit3VF, main="selected Arthropod Density by Treatment")
+boxplot(food_final$Visit3VFX, new=F)
+
+
+
 
 #*********************************************************************************************
 ##Group by plant species
@@ -265,7 +271,9 @@ all_PR_Red <- filter(all_sp1, siteID == "117", surveyTrees=="Red maple")
 
 
 #****************Analyze change in herbivory**********
-unique_herbivory<-unique(ex_pairs3[, c("TrapType", "siteID", "circle", "survey", "VisitNumber", "percent_herb")])
+unique_herbivory<-unique(ex_pairs2[, c("TrapType", "siteID", "circle", "survey", "VisitNumber", "percent_herb")])
+unique_herbivory_V3 <- filter(unique_herbivory, VisitNumber=="3")
+unique_herbivory_V3 <- spread(unique_herbivory_V3, TrapType, percent_herb)
 
 
 #Spread Visit 1 and Visit 3 for Herbivory and Create Difference Column to Format for Wilcox Test
@@ -288,6 +296,18 @@ mean_site_herb<-data.frame(mean_site_herb)
 grouped_species <- visual_surveys_clean %>% group_by(siteID, date, surveyTrees)
 mean_species_herb <- (summarise(grouped_species, mean(percent_herb)))
 mean_species_herb <- data.frame(mean_species_herb)
+
+#Histogram of Total Arth Density on 3rd Visit & Herbivory
+par(mfcol=c(2, 2))
+histogram(food_final$Visit3VF, main="Arthropod Density on Control Trees", type="count",
+          ylab="Number of Surveys", ylim=c(0,25), xlab="Arthropod density (# of arthropods)", col="slate blue2")
+histogram(food_final$Visit3VFX, main="Arthropod Density on Exclosure Trees", type="count",
+          ylab="Number of Surveys", ylim=c(0,25), xlab="Arthropod density (# of arthropods)", col="slate blue2")
+histogram(unique_herbivory_V3$VF, main="Herbivory on Control Trees", type="count",
+          ylab="Number of Surveys", ylim=c(0,15), xlab="Percent Herbivory", col="green2")
+histogram(unique_herbivory_V3$VFX, main="Herbivory on Exclosure Trees", type="count",
+          ylab="Number of Surveys", ylim=c(0,15), xlab="Percent Herbivory", col="green2")
+
 
 #Visualizing Herbivory
 plot.default(mean_site_herb$mean.percent_herb., mean_site_herb$date)
