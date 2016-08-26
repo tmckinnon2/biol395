@@ -5,7 +5,7 @@
 # ****************Need to go through and add effortByDay argument**************
 
 # Run summary_functions.r and data_cleaning.R
-source('summary_functions.r')
+source('summary_functions_2016.r')
 source('data_cleaning_2016.R')
 
 #################

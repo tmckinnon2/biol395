@@ -6,7 +6,7 @@ library(stringr)
 library(coin)
 library(lattice)
 # Read in data
-setwd("~/Desktop/insect-exclosure")
+setwd("~/Desktop/insect-exclosure/caterpillars-count-analysis/2016")
 all_surveys <- read.csv('tbl_surveys.csv', header=F)
 all_orders <- read.csv('tbl_orders.csv', header=F)
 all_surveyTrees <- read.csv("tbl_surveyTrees.csv", header=T)
@@ -26,6 +26,8 @@ names(all_surveyTrees) = c("siteID", "circle", "survey", "surveyTrees")
 all_surveys1= select(all_surveys, -timeSubmit, -Status, -leavePhoto, -source)
 all_orders1 = select(all_orders, -insectPhoto, -timeStamp, -isValid)
 
+#Change surveyTrees to Character 
+all_surveyTrees$surveyTrees<-as.character(all_surveyTrees$surveyTrees)
 
 #Add columns with arth order count and official plant species
 all_data <- merge (all_surveys1, all_orders1, 
@@ -48,6 +50,7 @@ names(all_data2) <- c("identifier", "surveyID", "siteID", "userID",
                       "surveyType","leafCount","orderID","orderArthropod",
                       "orderLength", "orderNotes",
                       "orderCount", "surveyTrees")
+
 #Change herbivory to percent values (midpoint of range for Categories 1-3, 37.5 for 4)
 all_data2$percent_herb <- ifelse(all_data2$herbivory==0, "0",
                           ifelse(all_data2$herbivory==1, "2.5",
@@ -178,9 +181,8 @@ names(caterpillar_abundance1) <- c("TrapType","siteID", "circle", "survey", "Vis
 caterpillar_abundance1["total_caterpillar"][is.na(caterpillar_abundance1["total_caterpillar"])] <- 0
 
 #Remove outliers
-food_time <-filter(food_abundance1, total_food > 6)
-caterpilar_time <- filter(caterpillar_abundance1, total_caterpillar > 6)
-
+#food_time <-filter(food_abundance1, -total_food > 6)
+#caterpillar_time <- filter(caterpillar_abundance1, -total_caterpillar > 6)
 
 #Spread Visit 1 and Visit 3 for 3 Food Type Datasets and Create Difference Column to Format for Wilcox Test
 all_time <- spread(all_abundance1, VisitNumber, total_all)
@@ -196,7 +198,8 @@ names(caterpillar_time) = c('TrapType','siteID', "circle", "survey", "Visit1", "
 caterpillar_time$visit_dif<-caterpillar_time$Visit3-caterpillar_time$Visit2
 
 
-#Run wilcox_test
+
+#Run wilcox_test (Difference of Difference, parallel to 2012 Comparison)
 wilcox_test(visit_dif ~ TrapType, data=all_time)
 wilcox_test(visit_dif ~ TrapType, data=food_time)
 wilcox_test(visit_dif ~ TrapType, data=caterpillar_time) 
@@ -236,38 +239,9 @@ boxplot(food_final$Visit3Dif ~food_final$treeSp, main="Arth Density for Relevant
 boxplot(caterpillar_final$Visit3Dif ~caterpillar_final$treeSp, main="Caterpillar Density by Tree Species", 
         ylab="FinalVisit Difference in Caterpillar Density (treatment-control)", new=T)
 
-boxplot(food_final$Visit3Dif,food_final$treeSp=="American beech", main="Arth Density for Relevant Orders by Tree Species", 
-        ylab="FinalVisit Difference in Arth Density (treatment-control)")
-boxplot(food_final$Visit3Dif,food_final$treeSp=="Box elder", main="Arth Density for Relevant Orders by Tree Species", 
-        ylab="FinalVisit Difference in Arth Density (treatment-control)")
 #Boxplot of average arth densities for exclosures and controls
 boxplot(food_final$Visit3VF, main="selected Arthropod Density by Treatment")
 boxplot(food_final$Visit3VFX, new=F)
-
-
-
-
-#*********************************************************************************************
-##Group by plant species
-##Add back plant species info
-all_time$identifier <- paste0(all_time$siteID, 
-                              all_time$circle, 
-                              all_time$survey)
-all_sp <-merge(all_time, all_surveyTrees, 
-                    by.x= "identifier", 
-                    by.y="identifier", all.x= TRUE)
-all_sp1<- select(all_sp, -identifier, -siteID.y,-survey.y, -circle.y)
-names(all_sp1) <- c("TrapType", "siteID", "circle", 
-                   "survey", "Visit1", "Visit2", 
-                   "Visit3", "visit_dif", "surveyTrees")
-
-#subset data frame by plant species
-all_BG_Spicebush <- filter(all_sp1, siteID == "8892356", surveyTrees=="Spicebush")
-all_BG_Sugar <- filter(all_sp1, siteID == "8892356", surveyTrees=="Sugar maple")
-all_BG_Beech <- filter(all_sp1, siteID == "8892356", surveyTrees=="American beech")
-all_PR_Sweet <- filter(all_sp1, siteID == "117", surveyTrees=="Sweet gum")
-all_PR_Box <- filter(all_sp1, siteID == "117", surveyTrees=="Box elder")
-all_PR_Red <- filter(all_sp1, siteID == "117", surveyTrees=="Red maple")
 
 
 #****************Analyze change in herbivory**********

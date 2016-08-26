@@ -54,10 +54,10 @@ goodstations$StateRouteStop_Station <- paste(goodstations$StateRouteStop, goodst
 topdown9 <- topdown8[topdown8$StateRouteStop_Station %in% goodstations$StateRouteStop_Station, ]
 
 #Include Only Insects Large enough for Bird Consumption
-topdown10 <- filter(topdown9, Size %in% c("X2.5mm", "X5.10mm", 
+topdown10 <- filter(topdown9, Size %in% c("X5.10mm", 
                                          "X10.20mm","X.20mm"))
 #Summarise Observations for 3 Food Types
-#Summarise Observations for All Arthropods (Arthropods greater than 2 mm)
+#Summarise Observations for All Arthropods (Arthropods greater than 5 mm)
 grouped_all <- topdown10 %>% group_by(TrapType, StateRouteStop, Station, VisitNumber)
 total_all <- (summarise(grouped_all, sum(Abundance)))
 total_all$surveyID<- paste0(total_all$StateRouteStop, total_all$VisitNumber,

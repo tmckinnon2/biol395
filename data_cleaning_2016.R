@@ -1,4 +1,4 @@
-setwd("~/Desktop/insect-exclosure")
+setwd("~/Desktop/insect-exclosure/caterpillars-count-analysis/2016")
 ################################################
 # Script for reading in and cleaning data from
 # Caterpillars Count! data exported from the
@@ -86,13 +86,13 @@ setwd("~/Desktop/insect-exclosure")
       cleandata$arthCode[is.na(cleandata$arthCode)] = "NONE"
       
       # Take out large caterpillar colonies
-      cleandata <- cleandata[!(cleandata$arthCode == "LEPL" & cleandata$count > 10),]
+      cleandata1 <- cleandata[!(cleandata$arthCode == "LEPL" & cleandata$count > 10),]
       # or
       #cleandata$count[cleandata$arthCode == "LEPL" & cleandata$count > 5] = 5
       
       # Cleaning beat sheets (PR and BG) and isolating # leaves into a new column
-      beatsheet_pre2016 <- cleandata[grep("BEAT SHEET", cleandata$notes.x), ] 
-      beatsheet_post2016 <- cleandata[((cleandata$leafCount != "50") & (cleandata$year>= "2016")) | (cleandata$surveyType=="Beat_Sheet"),] #separates beatsheets in to their own dataframe
+      beatsheet_pre2016 <- cleandata1[grep("BEAT SHEET", cleandata1$notes.x), ] 
+      beatsheet_post2016 <- cleandata1[((cleandata1$leafCount != "50") & (cleandata1$year>= "2016")) | (cleandata1$surveyType=="Beat_Sheet"),] #separates beatsheets in to their own dataframe
       
       leavesNumTemp0 <- word(beatsheet_pre2016$notes.x, -1, sep = "BEAT SHEET; ")
       leavesNumTemp <- word(leavesNumTemp0, -1, sep = "= ")
@@ -108,24 +108,24 @@ setwd("~/Desktop/insect-exclosure")
       beatsheet_post2016$leavesNum = NA
       beatsheet<-rbind(beatsheet_pre2016, beatsheet_post2016)
       beatsheet$surveyType <- "Beat_Sheet"
-      cleandata$leavesNum = NA
-      cleandata <- cleandata[!cleandata$surveyID %in% beatsheet$surveyID, ]
-      cleandata <- rbind(cleandata, beatsheet)
-      names(cleandata) <- c("surveyID", "userID", "site", "survey", "circle", "date",
+      cleandata1$leavesNum = NA
+      visualdata <- cleandata1[!cleandata1$surveyID %in% beatsheet$surveyID, ]
+      cleandata2 <- rbind(visualdata, beatsheet)
+      names(cleandata2) <- c("surveyID", "userID", "site", "survey", "circle", "date",
                            "julianday", "plantSp", "herbivory", "surveyType", "leafCount", "arthropod", "arthCode",
                            "length", "count", "notes.y", "notes.x", "wetLeaves", "year", "leavesNum")
-      cleandata["surveyType"][is.na(cleandata["surveyType"])] <- "Visual"
+      cleandata2["surveyType"][is.na(cleandata2["surveyType"])] <- "Visual"
      
       #-----------------------------------------------------------------------------------------------------------------
       
-      ## Calculating biomass and adding this as a column to the cleandata
+      ## Calculating biomass and adding this as a column to the clean data
       
       
       # Create empty biomass vector
 
-      cleandata = cleandata[!is.na(cleandata$surveyID),]
+      cleandata3 = cleandata2[!is.na(cleandata2$surveyID),]
       
-      cleandata$biomass = numeric(length=nrow(cleandata))
+      cleandata3$biomass = numeric(length=nrow(cleandata3))
       
       # y = a(x)^b
       # Read in arthropod regression data with slope = b and intercept = log(a)
@@ -144,7 +144,7 @@ setwd("~/Desktop/insect-exclosure")
       for (ord in arthlist) {
         b = reg.data[reg.data$arthCode == ord,]$slope
         a = reg.data[reg.data$arthCode == ord,]$coefficient
-        cleandata$biomass[cleandata$arthCode == ord] <- (a*(cleandata$length[cleandata$arthCode == ord])^(b))*(cleandata$count[cleandata$arthCode == ord])
+        cleandata3$biomass[cleandata3$arthCode == ord] <- (a*(cleandata3$length[cleandata3$arthCode == ord])^(b))*(cleandata3$count[cleandata3$arthCode == ord])
       }
       
       
@@ -152,15 +152,17 @@ setwd("~/Desktop/insect-exclosure")
       regorders <- as.vector(reg.data.temp$arthCode)
       
       #Removing exclosure trees (only 2016)    
-      cleandata <-filter(cleandata, !(grepl("EXCLOSURE", notes.x)))
+      finaldata <-filter(cleandata3, !(grepl("EXCLOSURE", notes.x)))
       
       # Subsetting cleandata now that it has the biomass column included
-      cleandata.pr <- cleandata[cleandata$site == 117 & cleandata$year == 2016,]
-      cleandata.bg <- cleandata[cleandata$site == 8892356 & cleandata$year == 2016,]
+      finaldata.pr <- finaldata[finaldata$site == 117 & finaldata$year == 2016,]
+      finaldata.bg <- finaldata[finaldata$site == 8892356 & finaldata$year == 2016,]
       
-      amsurvey.pr <- surveySubset(cleandata.pr, subset = "visual am", minLength = 5)
-      pmsurvey.pr <- surveySubset(cleandata.pr, subset = "visual pm", minLength = 5)
-      beatsheet.pr <- surveySubset(cleandata.pr, subset = "beat sheet", minLength = 5)
-      volunteer.pr <- surveySubset(cleandata.pr, subset = "volunteer", minLength = 5)
-      
+      amsurvey.pr <- surveySubset(finaldata.pr, subset = "visual am", minLength = 5)
+      pmsurvey.pr <- surveySubset(finaldata.pr, subset = "visual pm", minLength = 5)
+      beatsheet.pr <- surveySubset(finaldata.pr, subset = "beat sheet", minLength = 5)
+      volunteer.pr <- surveySubset(finaldata.pr, subset = "volunteer", minLength = 5)
+     
+      amsurvey.bg <- surveySubset(finaldata.bg, subset = "visual am", minLength = 5)
+      beatsheet.bg <- surveySubset(finaldata.bg, subset = "beat sheet", minLength = 5) 
      
