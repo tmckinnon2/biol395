@@ -338,4 +338,18 @@ points(exclosure_lat_longs$Longitude,exclosure_lat_longs$Latitude, pch = 4, col 
 #  print(dplyr::filter(topdown9, TreeSpecies == tree))}
 #treeSp= data.frame(trees)
 
+# analyze herbivory
+topdown10$percent_herb =  ifelse(topdown10$Herbivory==0, "0",
+                           ifelse(topdown10$Herbivory==1, "2.5",
+                           ifelse(topdown10$Herbivory==2, "7.5",
+                           ifelse(topdown10$Herbivory==3, "17.5", 
+                           ifelse(topdown10$Herbivory==4, "37.5", NA)))))
+topdown10$percent_herb = as.numeric(topdown10$percent_herb)
+topdown_uniq_herb = unique(topdown10[, c("TrapType", "StateRouteStop", "Station", "VisitNumber", "percent_herb")])
+topdown_herb = spread(topdown_uniq_herb, VisitNumber, percent_herb) # why are there NAs... were they really not surveyed?
+names(topdown_herb) = c("TrapType", "StateRouteStop", "Station", "Visit1", "Visit3")
+topdown_herb_complete = filter(topdown_herb, Visit1 != "NA" & Visit3 != "NA" )
+topdown_herb_complete$visit_dif<-topdown_herb_complete$Visit3-topdown_herb_complete$Visit1
+topdown_herb_complete$TrapType <- as.factor(topdown_herb_complete$TrapType)
+wilcox_test(visit_dif ~ TrapType, data=topdown_herb_complete)
 
